@@ -1,0 +1,7 @@
+Access via Nginx proxy:
+
+Frontend → http://localhost/
+
+Spring Boot → http://localhost/api/
+
+FastAPI → http://localhost/ml/
