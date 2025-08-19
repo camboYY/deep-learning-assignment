@@ -1,4 +1,13 @@
 fastapi
-uvicorn
+uvicorn[standard]
+pillow
+numpy
+opencv-python
+torch
+insightface   # ArcFace models
+python-multipart
 psycopg2-binary
-redis
+SQLAlchemy==2.0
+asyncpg
+databases
+aioredis
