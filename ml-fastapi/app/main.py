@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select, insert
 import numpy as np
 import hashlib
+from app.routers import ws as ws_router
 
 from database import database, engine, metadata, redis
 from models import Staff, StaffCreate
@@ -103,3 +104,9 @@ async def mark_attendance(
 @app.get("/healthcheck")
 async def healthcheck():
     return {"success": True}
+
+app.include_router(ws_router.router)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
