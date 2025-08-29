@@ -1,0 +1,24 @@
+spring:
+  datasource:
+#    username: avnadmin
+#    url: jdbc:postgresql://pg-2dae27d8-pilsam123-f9b7.l.aivencloud.com:28805/defaultdb
+#    password: AVNS_z8NksMRJXlGwZqTSZ99
+    username: postgres
+    url: jdbc:postgresql://localhost:5432/postgres
+    password: postgres
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      show-sql: 'true'
+      ddl-auto: update
+  application:
+    name: e-learning
+udemy:
+  app:
+    jwtSecret: 00A0C0EB9EF56AB8DE4A9CCA224A59A130FF1B16D7E23FA8FAA437EC5EA215F5
+    jwtExpirationMs: '6000000'
+hibernate:
+  temp:
+    use_jdbc_metadata_defaults: 'false'
