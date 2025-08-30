@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@Table(name = "students")
+@Table(name = "employees")
 @Entity
-public class Student {
+public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Long id;
@@ -23,10 +23,7 @@ public class Student {
     private LocalDateTime dob;
     @Enumerated(EnumType.STRING)
     private EGender gender;
-    @Enumerated(EnumType.STRING)
-    private EAttendeneStatus status;
-    private LocalDateTime checkin;
-    private LocalDateTime checkout;
+    private String imageUrl;
 
     @CreationTimestamp
     private Timestamp createdAt;

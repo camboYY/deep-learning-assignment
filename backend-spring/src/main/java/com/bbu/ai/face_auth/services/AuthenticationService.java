@@ -101,7 +101,8 @@ public class AuthenticationService {
                 }
             });
         }
-
+        user.setName(signUpRequest.getName());
+        user.setEmail(signUpRequest.getEmail());
         user.setRoles(roles);
         userRepository.save(user);
         return userRepository.save(user);

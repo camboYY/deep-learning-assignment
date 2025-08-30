@@ -5,12 +5,10 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class StudentRequest {
+public class EmployeeRequest {
     private String name;
     private LocalDateTime dob;
     private String gender;
-    private String status;
-    private LocalDateTime checkin;
-    private LocalDateTime checkout;
+    private String imageUrl;
 
 }
