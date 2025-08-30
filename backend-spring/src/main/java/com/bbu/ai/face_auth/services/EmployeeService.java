@@ -28,7 +28,7 @@ public class EmployeeService {
     }
 
     public Employee create(EmployeeRequest employeeRequest){
-        logger.info("StudentRequest{}", employeeRequest);
+        logger.info("EmployeeRequest{}", employeeRequest);
         // Create new student's account
         Employee employee = new Employee();
         employee.setName(employeeRequest.getName());
@@ -52,7 +52,7 @@ public class EmployeeService {
     }
 
     public Employee update(Long id, EmployeeRequest employeeRequest){
-        logger.info("StudentRequest{}", employeeRequest);
+        logger.info("EmployeeRequest{}", employeeRequest);
         // Create new student's account
         Employee employee = employeeRepository.getById(id);
         employee.setName(employeeRequest.getName());
