@@ -1,0 +1,19 @@
+spring:
+  datasource:
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      show-sql: 'true'
+      ddl-auto: update
+  application:
+    name: e-learning
+udemy:
+  app:
+    jwtSecret: 00A0C0EB9EF56AB8DE4A9CCA224A59A130FF1B16D7E23FA8FAA437EC5EA215F5
+    jwtExpirationMs: '6000000'
+hibernate:
+  temp:
+    use_jdbc_metadata_defaults: 'false'
