@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+.env
+.envrc
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Torch / ML models
+*.pth
+*.pt
+*.onnx
+models/*.pth
+checkpoints/
+
+# Logs
+*.log
+*.out
+*.err
+
+# Redis dump
+dump.rdb
+appendonly.aof
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+docker-compose.override.yml
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Coverage / Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# FastAPI static
+staticfiles/

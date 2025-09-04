@@ -1,33 +1,43 @@
-# =============================
-# Stage 1: Build dependencies
-# =============================
-FROM python:3.11-slim AS builder
+# ===============================
+# 1. Use Python base image
+# ===============================
+FROM python:3.11-slim
+
+# ===============================
+# 2. Set work directory
+# ===============================
 WORKDIR /app
 
-# Install build tools (needed for some Python deps)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ libpq-dev \
+# ===============================
+# 3. Install system dependencies
+# ===============================
+# Required for torch, pillow, and image processing
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for caching
+# ===============================
+# 4. Copy requirements & install
+# ===============================
 COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
 
-# =============================
-# Stage 2: Runtime image
-# =============================
-FROM python:3.11-slim
-WORKDIR /app
+# Upgrade pip
+RUN pip install --upgrade pip
 
-# Copy installed dependencies from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# Install Python dependencies
+RUN pip install -r requirements.txt
 
-# Copy app source
+# ===============================
+# 5. Copy application code
+# ===============================
 COPY . .
 
-# Expose FastAPI port
+# ===============================
+# 6. Expose port & run server
+# ===============================
 EXPOSE 8000
 
-# Start FastAPI with uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start FastAPI with Uvicorn
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

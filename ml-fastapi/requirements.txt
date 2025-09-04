@@ -1,13 +1,20 @@
-fastapi
-uvicorn[standard]
-pillow
-numpy
-opencv-python
-torch
-insightface   # ArcFace models
-python-multipart
-psycopg2-binary
-SQLAlchemy==2.0
-asyncpg
-databases
-aioredis
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+
+# PyTorch CPU-only
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
+
+# Face recognition
+facenet-pytorch==2.6.0
+
+# Core dependencies
+pillow>=10.2.0,<10.3.0
+numpy>=1.26.0,<1.27
+redis>=6.0.0
+python-multipart==0.0.6
+
+# Optional: ONNX for server-side inference
+onnx==1.15.0
+onnxruntime==1.16.1
