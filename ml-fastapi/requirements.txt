@@ -1,17 +1,12 @@
-# Core deep learning stack (officially matched versions)
+numpy==1.26.4
+onnx==1.19.0
+onnxruntime==1.15.1
+insightface==0.7.3
+fastapi==0.105.0
+uvicorn==0.25.0
+redis
 torch==2.2.2
 torchvision==0.17.2
 torchaudio==2.2.2
-
-# Face recognition & embeddings
 facenet-pytorch==2.6.0
-insightface==0.7.3
-
-# ONNX Runtime (for model inference)
-onnxruntime==1.15.1
-
-# API server stack
-fastapi==0.105.0
-uvicorn==0.25.0
-
-redis
+python-multipart==0.0.9   # 👈 add this

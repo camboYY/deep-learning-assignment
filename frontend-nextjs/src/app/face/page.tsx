@@ -101,6 +101,7 @@ export default function VerifyPage() {
         video,
         new faceapi.TinyFaceDetectorOptions()
       );
+      console.log(detections);
       if (detections.length === 1) {
         // capture current frame for verification
         const ctx = canvas.getContext("2d");

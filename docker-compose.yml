@@ -30,10 +30,8 @@ services:
     build: ./ml-fastapi
     container_name: attendance_fastapi
     environment:
-      DATABASE_URL: postgresql://admin:admin123@postgres:5432/attendance_db
       REDIS_URL: redis://attendance_redis:6379/0
     depends_on:
-      - postgres
       - redis
     expose: # expose instead of ports because Nginx will forward traffic
       - "8000"

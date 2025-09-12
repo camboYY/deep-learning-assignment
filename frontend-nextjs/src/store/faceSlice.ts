@@ -47,7 +47,7 @@ export const verifyFace = createAsyncThunk<
   { rejectValue: string } // error type
 >("face/verify", async (payload, thunkAPI) => {
   try {
-    const res = await fetch("/api/verify-face", {
+    const res = await fetch("/ml/verify-face", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -56,6 +56,7 @@ export const verifyFace = createAsyncThunk<
       throw new Error(await res.text());
     }
     return (await res.json()) as FaceVerifyResponse;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.message);
   }
@@ -67,7 +68,7 @@ export const enrollFace = createAsyncThunk<
   { rejectValue: string }
 >("face/enroll", async (payload, thunkAPI) => {
   try {
-    const res = await fetch("/api/enroll-face", {
+    const res = await fetch("/ml/enroll-face", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -76,6 +77,7 @@ export const enrollFace = createAsyncThunk<
       throw new Error(await res.text());
     }
     return (await res.json()) as FaceEnrollResponse;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.message);
   }
