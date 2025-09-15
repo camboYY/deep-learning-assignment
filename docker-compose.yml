@@ -1,60 +1,99 @@
-version: "3.9"
 services:
   postgres:
     image: postgres:15
     container_name: attendance_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
       POSTGRES_DB: attendance_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Uncomment if you need to connect from your laptop (psql/GUI):
+    # ports:
+    #   - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d attendance_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+      
 
   redis:
     image: redis:7.2-alpine
     container_name: attendance_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   springboot:
     build: ./backend-spring
     container_name: attendance_springboot
+    restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/attendance_db
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: admin123
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     expose:
       - "8080"
+    # (Optional) add a healthcheck if your image has curl or wget installed
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 10
 
-  fastapi:
-    build: ./ml-fastapi
-    container_name: attendance_fastapi
-    environment:
-      REDIS_URL: redis://attendance_redis:6379/0
-    depends_on:
-      - redis
-    expose: # expose instead of ports because Nginx will forward traffic
-      - "8000"
+  # fastapi:
+  #   build: ./ml-fastapi
+  #   container_name: attendance_fastapi
+  #   restart: unless-stopped
+  #   environment:
+  #     REDIS_URL: redis://attendance_redis:6379/0
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   expose:
+  #     - "8000"
+    # Optional healthcheck (ensure your image has curl/wget, or add a /health route)
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 10
 
   frontend:
     build:
       context: ./frontend-nextjs
-      dockerfile: Dockerfile # or Dockerfile.dev if coding
+      dockerfile: Dockerfile
     container_name: attendance_frontend
+    restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: /api
       NEXT_PUBLIC_ML_API_URL: /ml
     depends_on:
       - springboot
-      - fastapi
+      # - fastapi
     expose:
       - "3000"
 
+  # Dev-only Next.js (hot reload). Use with: docker compose --profile dev up -d
   frontend-dev:
+    profiles: ["dev"]
     build:
       context: ./frontend-nextjs
       dockerfile: Dockerfile.dev
     container_name: attendance_frontend_dev
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -65,11 +104,12 @@ services:
       - /app/node_modules
     depends_on:
       - springboot
-      - fastapi
+      # - fastapi
 
   nginx:
     image: nginx:1.27
     container_name: attendance_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:
@@ -77,7 +117,8 @@ services:
     depends_on:
       - frontend
       - springboot
-      - fastapi
+      # - fastapi
 
 volumes:
   postgres_data:
+  redis_data:
