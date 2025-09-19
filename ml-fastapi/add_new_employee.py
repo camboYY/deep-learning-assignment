@@ -13,7 +13,7 @@ app = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
 app.prepare(ctx_id=0)
 
 
-def enroll_new_faces_from_upload(emp_id: str, files: list):
+async def enroll_new_faces_from_upload(emp_id: str, files: list):
     """
     Enroll new faces for a single employee from uploaded images
     and store/update embeddings in Redis.
@@ -28,7 +28,8 @@ def enroll_new_faces_from_upload(emp_id: str, files: list):
 
     for file in files:
         try:
-            img = np.array(Image.open(BytesIO(file.read())).convert("RGB"))
+            content = await file.read()
+            img = np.array(Image.open(BytesIO(content)).convert("RGB"))
         except Exception as e:
             print(f"⚠️ Failed to read image {file.filename}: {e}")
             continue

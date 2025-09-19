@@ -42,21 +42,24 @@ export interface FaceState {
 // Async thunks
 // --------------------
 export const verifyFace = createAsyncThunk<
-  FaceVerifyResponse, // return type
-  FaceVerifyPayload, // payload type
-  { rejectValue: string } // error type
+  FaceVerifyResponse,
+  FaceVerifyPayload,
+  { rejectValue: string }
 >("face/verify", async (payload, thunkAPI) => {
   try {
-    const res = await fetch("/ml/verify-face", {
+    const formData = new FormData();
+    const blob = await (await fetch(payload.imageBase64)).blob();
+    formData.append("file", blob, "face.jpg");
+
+    const res = await fetch("http://localhost:8000/verify", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: formData,
     });
+
     if (!res.ok) {
       throw new Error(await res.text());
     }
     return (await res.json()) as FaceVerifyResponse;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.message);
   }

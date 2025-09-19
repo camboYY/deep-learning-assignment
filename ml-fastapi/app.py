@@ -6,12 +6,24 @@ import redis
 import pickle
 import asyncio
 from add_new_employee import enroll_new_faces_from_upload
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Face Recognition Attendance System")
 r = redis.Redis(host='localhost', port=6379, db=0)
 training_lock = asyncio.Lock()
+# Allow your frontend origin
+origins = [
+    "http://localhost:3000",
+]
 
-# Initialize ArcFace model for verification
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # can also use ["*"] to allow all origins (less secure)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# Initialize ArcFace model for verificatixon
 app_model = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
 app_model.prepare(ctx_id=-1, det_size=(640, 640))
 
