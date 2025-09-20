@@ -13,7 +13,9 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 training_lock = asyncio.Lock()
 # Allow your frontend origin
 origins = [
-    "http://localhost:3000",
+    "http://localhost",           # Nginx domain
+    "http://localhost:3000",      # frontend dev port
+    "http://host.docker.internal" # inside docker network
 ]
 
 app.add_middleware(

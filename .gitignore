@@ -52,3 +52,4 @@ htmlcov/
 
 # FastAPI static
 staticfiles/
+/ml-fastapi/data/train/*

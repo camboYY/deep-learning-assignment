@@ -5,3 +5,4 @@ Frontend → http://localhost/
 Spring Boot → http://localhost/api/
 
 FastAPI → http://localhost/ml/
+run ml fastapi: uvicorn app:app --reload --host 0.0.0.0 --port 8000

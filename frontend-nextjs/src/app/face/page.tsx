@@ -1,41 +1,64 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/store";
-import { resetResult, verifyFace } from "@/store/faceSlice";
+import { useCreateAttendanceMutation } from "@/store/attendanceApi";
+import { useVerifyFaceMutation } from "@/store/faceApi";
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function VerifyPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const dispatch = useAppDispatch();
-  const { status, result, error } = useAppSelector((s) => s.face);
   const [streaming, setStreaming] = useState(false);
+  const [verifyFace, { isLoading, error, reset, data, isSuccess, isError }] =
+    useVerifyFaceMutation();
+  const [
+    createAttendance,
+    {
+      isLoading: isLoadingCreate,
+      error: errorCreate,
+      reset: resetCreate,
+      data: dataCreate,
+      isSuccess: isSuccessCreate,
+      isError: isErrorCreate,
+    },
+  ] = useCreateAttendanceMutation();
 
-  // Start webcam
-  useEffect(() => {
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-          audio: false,
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          setStreaming(true);
-        }
-      } catch (err) {
-        console.error("Webcam error:", err);
+  // Function to start camera
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: false,
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setStreaming(true);
       }
+    } catch (err) {
+      console.error("Webcam error:", err);
+      toast.error("Failed to access webcam");
     }
+  };
 
+  // Function to stop camera
+  const stopCamera = () => {
+    const tracks =
+      (videoRef.current?.srcObject as MediaStream)?.getTracks?.() || [];
+    tracks.forEach((t) => t.stop());
+    setStreaming(false);
+  };
+
+  const handleReset = async () => {
+    reset(); // clear mutation state
+    await stopCamera(); // stop current stream
+    await startCamera(); // start camera again
+  };
+
+  // Start camera on mount
+  useEffect(() => {
     startCamera();
-
-    return () => {
-      const tracks =
-        (videoRef.current?.srcObject as MediaStream)?.getTracks?.() || [];
-      tracks.forEach((t) => t.stop());
-    };
+    return () => stopCamera();
   }, []);
 
   // Capture frame from video
@@ -56,10 +79,31 @@ export default function VerifyPage() {
   };
 
   // Submit image to FastAPI
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const imageBase64 = captureImage();
     if (!imageBase64) return;
-    dispatch(verifyFace({ imageBase64 }));
+    try {
+      const res = await verifyFace({ imageBase64 }).unwrap();
+      const success = res.score >= 0.7;
+      if (success) {
+        // Option 3: Slice last characters (if format is fixed)
+        const match = res?.employee_id?.match(/\d+/);
+        const employeeNumber = match ? parseInt(match[0], 10) : null;
+
+        await createAttendance({
+          employeeId: Number(employeeNumber),
+          status: success ? "PRESENT" : "ABSENT",
+        }).unwrap();
+      }
+      toast.success(
+        res.score >= 0.7
+          ? `✅ Verified! Score: ${res.score.toFixed(2)}`
+          : "❌ No match found"
+      );
+    } catch (err) {
+      console.error("Verification failed:", err);
+      toast.error("Face verification failed");
+    }
   };
 
   return (
@@ -93,12 +137,12 @@ export default function VerifyPage() {
         <button
           onClick={handleVerify}
           className="px-4 py-2 rounded bg-blue-600 text-white"
-          disabled={!streaming}
+          disabled={!streaming || isLoading}
         >
-          Verify Face
+          {isLoading ? "Verifying..." : "Verify Face"}
         </button>
         <button
-          onClick={() => dispatch(resetResult())}
+          onClick={handleReset}
           className="px-4 py-2 rounded bg-gray-600 text-white"
         >
           Reset
@@ -106,9 +150,14 @@ export default function VerifyPage() {
       </div>
 
       <div className="mt-4 text-center">
-        <strong>Status:</strong> {status} <br />
-        {result && <div className="mt-2">Result: {JSON.stringify(result)}</div>}
-        {error && <div className="text-red-600 mt-2">Error: {error}</div>}
+        <strong>Status:</strong>{" "}
+        {isLoading
+          ? "Verifying..."
+          : isSuccess
+          ? "Success ✅"
+          : isError
+          ? "Failed ❌"
+          : "Idle"}
       </div>
     </div>
   );
