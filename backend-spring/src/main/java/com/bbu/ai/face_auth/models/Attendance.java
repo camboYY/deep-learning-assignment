@@ -24,10 +24,21 @@ public class Attendance {
     @Column(nullable = true)
     private LocalDateTime checkOut;
     private EAttendeneStatus status;
+    @Column(columnDefinition = "TEXT",nullable = true)
+    private String note;
+    @Column(nullable = true)
+    private String overTime;
+    @Column(nullable = true)
+    private String location;
 
     @CreationTimestamp
     private Timestamp createdAt;
     @UpdateTimestamp
     private Timestamp updatedAt;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employeeId", insertable = false, updatable = false)
+    private Employee employee;
 
 }

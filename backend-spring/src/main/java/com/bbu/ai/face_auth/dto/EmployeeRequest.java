@@ -10,5 +10,4 @@ public class EmployeeRequest {
     private LocalDateTime dob;
     private String gender;
     private String imageUrl;
-
 }

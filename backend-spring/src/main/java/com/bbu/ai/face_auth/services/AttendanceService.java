@@ -3,8 +3,11 @@ package com.bbu.ai.face_auth.services;
 
 import com.bbu.ai.face_auth.dto.AttendanceRequest;
 import com.bbu.ai.face_auth.models.Attendance;
+import com.bbu.ai.face_auth.models.Employee;
 import com.bbu.ai.face_auth.models.EAttendeneStatus;
+import com.bbu.ai.face_auth.mapper.AttendanceResponse;
 import com.bbu.ai.face_auth.repository.AttendanceRepository;
+import com.bbu.ai.face_auth.repository.EmployeeRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Page;
@@ -20,12 +23,15 @@ public class AttendanceService {
     private static final Logger logger = LogManager.getLogger(AttendanceService.class);
 
     private final AttendanceRepository attendanceRepository;
+    private final EmployeeRepository employeeRepository;
 
 
     public AttendanceService(
             AttendanceRepository attendanceRepository
+            , EmployeeRepository employeeRepository
     ) {
         this.attendanceRepository = attendanceRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     public Attendance create(AttendanceRequest attendanceRequest){
@@ -38,12 +44,40 @@ public class AttendanceService {
         return attendanceRepository.save(attendance);
     }
 
-    public Page<Attendance> getAll(Pageable pageable) {
-            return attendanceRepository.findAll(pageable);
+    public Page<AttendanceResponse> getAll(Pageable pageable) {
+
+        Page<Attendance> attendances = attendanceRepository.findAll(pageable);
+        return attendances.map(a -> new AttendanceResponse(
+                a.getId(),
+                a.getEmployeeId(),
+                getEmployeeName(a.getEmployeeId()), // fetch from Employee repo
+                a.getCheckIn(),
+                a.getCheckOut(),
+                a.getStatus().name(),
+                a.getNote(),
+                a.getOverTime(),
+                a.getLocation(),
+                a.getCreatedAt().toLocalDateTime(),
+                a.getUpdatedAt().toLocalDateTime()
+        ));
     }
-    public Page<Attendance> getByEmployeeId(Long id, Pageable pageable) {
-        return attendanceRepository.findByEmployeeId(id, pageable);
-    }
+
+    public Page<AttendanceResponse> getByEmployeeId(Long employeeId, Pageable pageable) {
+        Page<Attendance> attendances = attendanceRepository.findByEmployeeId(employeeId, pageable);
+
+        return attendances.map(a -> new AttendanceResponse(
+                a.getId(),
+                a.getEmployeeId(),
+                getEmployeeName(a.getEmployeeId()), // fetch from Employee repo
+                a.getCheckIn(),
+                a.getCheckOut(),
+                a.getStatus().name(),
+                a.getNote(),
+                a.getOverTime(),
+                a.getLocation(),
+                a.getCreatedAt().toLocalDateTime(),
+                a.getUpdatedAt().toLocalDateTime()
+        ));    }
 
     public Optional<Attendance> getById(Long id){
         Optional<Attendance> attendance = attendanceRepository.findById(id);
@@ -70,4 +104,56 @@ public class AttendanceService {
         attendanceRepository.deleteById(id);
     }
 
+    public Attendance markAttendance(Long employeeId, String note, String location) {
+        logger.info("Marking attendance for employee {}", employeeId);
+
+        Optional<Attendance> existingAttendance = attendanceRepository
+                .findTopByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(employeeId);
+
+        if (existingAttendance.isPresent()) {
+            // Checkout flow
+            Attendance attendance = existingAttendance.get();
+            attendance.setCheckOut(LocalDateTime.now());
+            attendance.setStatus(EAttendeneStatus.PRESENT);
+            attendance.setOverTime(calculateOvertime(attendance.getCheckIn(), attendance.getCheckOut()));
+
+            if (note != null) attendance.setNote(note);
+            if (location != null) attendance.setLocation(location);
+
+            return attendanceRepository.save(attendance);
+        } else {
+            // Check-in flow
+            Attendance attendance = new Attendance();
+            attendance.setEmployeeId(employeeId);
+            attendance.setCheckIn(LocalDateTime.now());
+            attendance.setStatus(EAttendeneStatus.PRESENT);
+
+            if (note != null) attendance.setNote(note);
+            if (location != null) attendance.setLocation(location);
+
+            return attendanceRepository.save(attendance);
+        }
+    }
+
+    // Calculate overtime
+    private String calculateOvertime(LocalDateTime checkIn, LocalDateTime checkOut) {
+        if (checkIn == null || checkOut == null) return null;
+
+        long minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
+        long standardMinutes = 8 * 60; // 8 hours
+        if (minutes > standardMinutes) {
+            long overtimeMinutes = minutes - standardMinutes;
+            long hours = overtimeMinutes / 60;
+            long mins = overtimeMinutes % 60;
+            return hours + "h " + mins + "m";
+        }
+        return "0h 0m";
+    }
+
+    // Get employee name
+    private String getEmployeeName(Long employeeId) {
+        return employeeRepository.findById(employeeId)
+                .map(Employee::getName)
+                .orElse("Unknown");
+    }
 }

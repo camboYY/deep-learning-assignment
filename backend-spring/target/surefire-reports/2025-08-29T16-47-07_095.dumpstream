@@ -1,5 +1,0 @@
-# Created at 2025-08-29T16:47:07.334
-Boot Manifest-JAR contains absolute paths in classpath 'D:\Ruon Puthsaomey Master\Y2-S2\Deep Learning and AI\API\mono-repo\deep-learning-assignment\backend-spring\target\test-classes'
-Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-'other' has different root
-
