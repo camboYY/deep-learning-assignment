@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
@@ -20,9 +21,9 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Long id;
     private String name;
-    private LocalDateTime dob;
+    private LocalDate dob;
     @Enumerated(EnumType.STRING)
-    private EGender gender;
+    private Gender gender;
     private String imageUrl;
 
     @CreationTimestamp

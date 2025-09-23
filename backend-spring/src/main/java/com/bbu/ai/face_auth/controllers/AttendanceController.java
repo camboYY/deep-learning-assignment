@@ -36,7 +36,6 @@ public class AttendanceController {
         return ResponseEntity.ok(attendance);
     }
 
-
     @PostMapping()
     public ResponseEntity<?> create(@Valid @RequestBody AttendanceRequest attendanceRequest){
         Attendance attendance = attendanceService.create(attendanceRequest);
@@ -84,9 +83,9 @@ public class AttendanceController {
         if(attendance.isPresent()){
             attendanceService.delete(id);
             return ResponseEntity.ok("Attendance deleted!");
-        }else{
-            return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.notFound().build();
 
     }
 

@@ -4,8 +4,8 @@ package com.bbu.ai.face_auth.services;
 import com.bbu.ai.face_auth.dto.AttendanceRequest;
 import com.bbu.ai.face_auth.models.Attendance;
 import com.bbu.ai.face_auth.models.Employee;
-import com.bbu.ai.face_auth.models.EAttendeneStatus;
 import com.bbu.ai.face_auth.mapper.AttendanceResponse;
+import com.bbu.ai.face_auth.models.EnumAttendanceStatus;
 import com.bbu.ai.face_auth.repository.AttendanceRepository;
 import com.bbu.ai.face_auth.repository.EmployeeRepository;
 import org.apache.logging.log4j.LogManager;
@@ -36,11 +36,12 @@ public class AttendanceService {
 
     public Attendance create(AttendanceRequest attendanceRequest){
         logger.info("attendanceRequest{}", attendanceRequest);
+
         // Create new student's account
         Attendance attendance = new Attendance();
-        attendance.setEmployeeId(attendanceRequest.getEmployeeId());
+        attendance.setEmployee(getEmployee(attendanceRequest.getEmployeeId()));
         attendance.setCheckIn(LocalDateTime.now());
-        attendance.setStatus(EAttendeneStatus.valueOf(attendanceRequest.getStatus()));
+        attendance.setStatus(attendanceRequest.getStatus());
         return attendanceRepository.save(attendance);
     }
 
@@ -49,8 +50,8 @@ public class AttendanceService {
         Page<Attendance> attendances = attendanceRepository.findAll(pageable);
         return attendances.map(a -> new AttendanceResponse(
                 a.getId(),
-                a.getEmployeeId(),
-                getEmployeeName(a.getEmployeeId()), // fetch from Employee repo
+                a.getEmployee(),
+                getEmployeeName(a.getId()), // fetch from Employee repo
                 a.getCheckIn(),
                 a.getCheckOut(),
                 a.getStatus().name(),
@@ -67,8 +68,8 @@ public class AttendanceService {
 
         return attendances.map(a -> new AttendanceResponse(
                 a.getId(),
-                a.getEmployeeId(),
-                getEmployeeName(a.getEmployeeId()), // fetch from Employee repo
+                a.getEmployee(),
+                getEmployeeName(a.getId()), // fetch from Employee repo
                 a.getCheckIn(),
                 a.getCheckOut(),
                 a.getStatus().name(),
@@ -80,8 +81,7 @@ public class AttendanceService {
         ));    }
 
     public Optional<Attendance> getById(Long id){
-        Optional<Attendance> attendance = attendanceRepository.findById(id);
-        return attendance;
+        return attendanceRepository.findById(id);
     }
 
     public Attendance update(Long id, AttendanceRequest attendanceRequest){
@@ -90,8 +90,8 @@ public class AttendanceService {
         Optional<Attendance> attendanceData = getById(id);
         if(attendanceData.isPresent()){
             Attendance attendance = attendanceData.get();
-            attendance.setEmployeeId(attendanceRequest.getEmployeeId());
-            attendance.setStatus(EAttendeneStatus.valueOf(attendanceRequest.getStatus()));
+            attendance.setEmployee(getEmployee(attendanceRequest.getEmployeeId()));
+            attendance.setStatus(attendanceRequest.getStatus());
             attendance.setCheckOut(LocalDateTime.now());
             return attendanceRepository.save(attendance);
         }else{
@@ -108,15 +108,16 @@ public class AttendanceService {
         logger.info("Marking attendance for employee {}", employeeId);
 
         Optional<Attendance> existingAttendance = attendanceRepository
-                .findTopByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(employeeId);
+                .findTopByEmployee_IdAndCheckOutIsNullOrderByCheckInDesc(employeeId);
+        logger.info("Marking attendance for existingAttendance {}", existingAttendance.isPresent());
 
         if (existingAttendance.isPresent()) {
             // Checkout flow
             Attendance attendance = existingAttendance.get();
             attendance.setCheckOut(LocalDateTime.now());
-            attendance.setStatus(EAttendeneStatus.PRESENT);
+            attendance.setStatus(EnumAttendanceStatus.PRESENT);
             attendance.setOverTime(calculateOvertime(attendance.getCheckIn(), attendance.getCheckOut()));
-
+            attendance.setEmployee(getEmployee(employeeId));
             if (note != null) attendance.setNote(note);
             if (location != null) attendance.setLocation(location);
 
@@ -124,9 +125,9 @@ public class AttendanceService {
         } else {
             // Check-in flow
             Attendance attendance = new Attendance();
-            attendance.setEmployeeId(employeeId);
+            attendance.setEmployee(getEmployee(employeeId));
             attendance.setCheckIn(LocalDateTime.now());
-            attendance.setStatus(EAttendeneStatus.PRESENT);
+            attendance.setStatus(EnumAttendanceStatus.PRESENT);
 
             if (note != null) attendance.setNote(note);
             if (location != null) attendance.setLocation(location);
@@ -155,5 +156,10 @@ public class AttendanceService {
         return employeeRepository.findById(employeeId)
                 .map(Employee::getName)
                 .orElse("Unknown");
+    }
+
+    private Employee getEmployee(Long employeeId) {
+        return employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found with id: " + employeeId));
     }
 }

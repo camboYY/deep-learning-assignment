@@ -4,13 +4,14 @@ import com.bbu.ai.face_auth.dto.EmployeeRequest;
 import com.bbu.ai.face_auth.models.Employee;
 import com.bbu.ai.face_auth.services.EmployeeService;
 import jakarta.validation.Valid;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 
@@ -19,6 +20,7 @@ import java.util.Optional;
 @RequestMapping("/api/admin/employee")
 public class EmployeeController {
 
+    private final Logger logger = LogManager.getLogger();
     private final EmployeeService employeeService;
 
     public EmployeeController(EmployeeService employeeService) {
@@ -28,18 +30,23 @@ public class EmployeeController {
     @PostMapping()
     public ResponseEntity<?> create(@Valid @RequestBody EmployeeRequest employeeRequest){
         Employee employee = employeeService.create(employeeRequest);
+        logger.info("employeeRequest{}", employeeRequest);
         return ResponseEntity.ok(employee);
     }
 
-    @GetMapping()
-    public ResponseEntity<?> getAll(
+    @GetMapping("/all")
+    public ResponseEntity<Page<Employee>> getAll(
             @RequestParam(value = "name", defaultValue = "") String name,
             @RequestParam(value = "page", defaultValue = "0") int page,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
+            @RequestParam(value = "size", defaultValue = "10") int size
+            ) {
 
         Pageable pageable = PageRequest.of(page, size);
+
         Page<Employee> employees = employeeService.getAll(name, pageable);
 
+
+        logger.info("employees{}", employees);
         return ResponseEntity.ok(employees);
     }
 
@@ -64,8 +71,5 @@ public class EmployeeController {
         }else{
             return ResponseEntity.notFound().build();
         }
-
     }
-
-
 }

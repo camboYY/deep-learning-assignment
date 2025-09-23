@@ -16,7 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @Service
-public class JwtService {
+public class JwtCustomService {
     @Value("${udemy.app.jwtSecret}")
     private String secretKey;
 

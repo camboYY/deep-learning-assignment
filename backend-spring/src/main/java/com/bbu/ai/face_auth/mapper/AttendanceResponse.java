@@ -1,10 +1,12 @@
 package com.bbu.ai.face_auth.mapper;
 
+import com.bbu.ai.face_auth.models.Employee;
+
 import java.time.LocalDateTime;
-@lombok.Builder
+
 public record AttendanceResponse(
         Long id,
-        Long employeeId,
+        Employee employee,
         String employeeName,
         LocalDateTime checkIn,
         LocalDateTime checkOut,

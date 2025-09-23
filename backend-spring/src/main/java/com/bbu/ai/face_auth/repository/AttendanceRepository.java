@@ -11,6 +11,6 @@ import java.util.Optional;
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Page<Attendance> findByEmployeeId(long employeeId, Pageable pageable);
-    Optional<Attendance> findTopByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(Long employeeId);
+    Optional<Attendance> findTopByEmployee_IdAndCheckOutIsNullOrderByCheckInDesc(Long employeeId);
 
 }

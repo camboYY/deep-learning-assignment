@@ -1,6 +1,6 @@
 package com.bbu.ai.face_auth.mapper;
-import com.bbu.ai.face_auth.models.Role;
 import com.bbu.ai.face_auth.models.User;
+import com.bbu.ai.face_auth.models.UserRole;
 import lombok.Data;
 
 import java.util.Set;
@@ -10,7 +10,7 @@ public class UserResponse {
     private String username;
     private String name;
     private String email;
-    private Set<Role> roles;
+    private Set<UserRole> roles;
     private String PhoneNumber;
     private long id;
 

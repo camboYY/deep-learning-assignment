@@ -19,11 +19,10 @@ public class Attendance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long employeeId;
     private LocalDateTime checkIn;
     @Column(nullable = true)
     private LocalDateTime checkOut;
-    private EAttendeneStatus status;
+    private EnumAttendanceStatus status;
     @Column(columnDefinition = "TEXT",nullable = true)
     private String note;
     @Column(nullable = true)
@@ -38,7 +37,7 @@ public class Attendance {
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employeeId", insertable = false, updatable = false)
+    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
     private Employee employee;
 
 }

@@ -2,7 +2,6 @@ package com.bbu.ai.face_auth.services;
 
 
 import com.bbu.ai.face_auth.dto.EmployeeRequest;
-import com.bbu.ai.face_auth.models.EGender;
 import com.bbu.ai.face_auth.models.Employee;
 import com.bbu.ai.face_auth.repository.EmployeeRepository;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +32,7 @@ public class EmployeeService {
         Employee employee = new Employee();
         employee.setName(employeeRequest.getName());
         employee.setDob(employeeRequest.getDob());
-        employee.setGender(EGender.valueOf(employeeRequest.getGender()));
+        employee.setGender(employeeRequest.getGender());
         employee.setImageUrl(employeeRequest.getImageUrl());
         return employeeRepository.save(employee);
     }
@@ -57,7 +56,7 @@ public class EmployeeService {
         Employee employee = employeeRepository.getById(id);
         employee.setName(employeeRequest.getName());
         employee.setDob(employeeRequest.getDob());
-        employee.setGender(EGender.valueOf(employeeRequest.getGender()));
+        employee.setGender(employeeRequest.getGender());
         employee.setImageUrl(employeeRequest.getImageUrl());
         return employeeRepository.save(employee);
     }

@@ -1,10 +1,7 @@
 package com.bbu.ai.face_auth.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @Table(name = "roles")
@@ -12,13 +9,17 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Role {
+@Builder
+public class UserRole {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private ERole name;
+    @Column(length = 20, nullable = false, unique = true)
+    private EnumRole name;
 
+    public UserRole(EnumRole name) {
+        this.name = name;
+    }
 }

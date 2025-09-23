@@ -1,11 +1,15 @@
 spring:
+  security:
+    user:
+      name: admin
+      password: admin123
   datasource:
 #    username: avnadmin
 #    url: jdbc:postgresql://pg-2dae27d8-pilsam123-f9b7.l.aivencloud.com:28805/defaultdb
 #    password: AVNS_z8NksMRJXlGwZqTSZ99
-    username: postgres
-    url: jdbc:postgresql://localhost:5432/postgres
-    password: postgres
+    username: myuser
+    url: jdbc:postgresql://localhost:5432/mydb
+    password: mypassword
   jpa:
     properties:
       hibernate:

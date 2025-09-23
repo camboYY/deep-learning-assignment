@@ -1,6 +1,5 @@
 package com.bbu.ai.face_auth.configs;
 
-import com.bbu.ai.face_auth.models.Role;
 import com.bbu.ai.face_auth.models.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
