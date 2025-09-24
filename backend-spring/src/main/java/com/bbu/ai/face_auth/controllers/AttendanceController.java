@@ -28,12 +28,12 @@ public class AttendanceController {
 
     // Mark attendance via webcam (face recognition gives employeeId)
     @PostMapping("/mark/{employeeId}")
-    public ResponseEntity<Attendance> markAttendance(@PathVariable Long employeeId, @RequestParam(required = false) String note,
+    public ResponseEntity<AttendanceResponse> markAttendance(@PathVariable Long employeeId, @RequestParam(required = false) String note,
                                                      HttpServletRequest request) {
         String location = getClientLocation(request);
-        Attendance attendance = attendanceService.markAttendance(employeeId, note, location);
+        AttendanceResponse response = attendanceService.markAttendance(employeeId, note, location);
 
-        return ResponseEntity.ok(attendance);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping()

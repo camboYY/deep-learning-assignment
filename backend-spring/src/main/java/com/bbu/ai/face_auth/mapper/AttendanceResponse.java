@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record AttendanceResponse(
         Long id,
-        Employee employee,
+        Long employeeId,
         String employeeName,
         LocalDateTime checkIn,
         LocalDateTime checkOut,

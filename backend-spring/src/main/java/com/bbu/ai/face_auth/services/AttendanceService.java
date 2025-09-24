@@ -50,8 +50,8 @@ public class AttendanceService {
         Page<Attendance> attendances = attendanceRepository.findAll(pageable);
         return attendances.map(a -> new AttendanceResponse(
                 a.getId(),
-                a.getEmployee(),
-                getEmployeeName(a.getId()), // fetch from Employee repo
+                a.getEmployee().getId(),
+                a.getEmployee().getName(), // fetch from Employee repo
                 a.getCheckIn(),
                 a.getCheckOut(),
                 a.getStatus().name(),
@@ -68,8 +68,8 @@ public class AttendanceService {
 
         return attendances.map(a -> new AttendanceResponse(
                 a.getId(),
-                a.getEmployee(),
-                getEmployeeName(a.getId()), // fetch from Employee repo
+                a.getEmployee().getId(),
+                a.getEmployee().getName(), // fetch from Employee repo
                 a.getCheckIn(),
                 a.getCheckOut(),
                 a.getStatus().name(),
@@ -104,37 +104,46 @@ public class AttendanceService {
         attendanceRepository.deleteById(id);
     }
 
-    public Attendance markAttendance(Long employeeId, String note, String location) {
-        logger.info("Marking attendance for employee {}", employeeId);
+    public AttendanceResponse markAttendance(Long employeeId, String note, String location) {
+        Attendance attendance;
 
-        Optional<Attendance> existingAttendance = attendanceRepository
-                .findTopByEmployee_IdAndCheckOutIsNullOrderByCheckInDesc(employeeId);
-        logger.info("Marking attendance for existingAttendance {}", existingAttendance.isPresent());
+        Optional<Attendance> existingAttendance =
+                attendanceRepository.findTopByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(employeeId);
 
         if (existingAttendance.isPresent()) {
             // Checkout flow
-            Attendance attendance = existingAttendance.get();
+            attendance = existingAttendance.get();
             attendance.setCheckOut(LocalDateTime.now());
             attendance.setStatus(EnumAttendanceStatus.PRESENT);
             attendance.setOverTime(calculateOvertime(attendance.getCheckIn(), attendance.getCheckOut()));
-            attendance.setEmployee(getEmployee(employeeId));
-            if (note != null) attendance.setNote(note);
-            if (location != null) attendance.setLocation(location);
-
-            return attendanceRepository.save(attendance);
         } else {
             // Check-in flow
-            Attendance attendance = new Attendance();
-            attendance.setEmployee(getEmployee(employeeId));
+            attendance = new Attendance();
             attendance.setCheckIn(LocalDateTime.now());
             attendance.setStatus(EnumAttendanceStatus.PRESENT);
-
-            if (note != null) attendance.setNote(note);
-            if (location != null) attendance.setLocation(location);
-
-            return attendanceRepository.save(attendance);
         }
+
+        attendance.setEmployee(getEmployee(employeeId));
+        if (note != null) attendance.setNote(note);
+        if (location != null) attendance.setLocation(location);
+
+        Attendance saved = attendanceRepository.save(attendance);
+
+        return new AttendanceResponse(
+                saved.getId(),
+                saved.getEmployee().getId(),
+                saved.getEmployee().getName(),
+                saved.getCheckIn(),
+                saved.getCheckOut(),
+                saved.getStatus().name(),
+                saved.getNote(),
+                saved.getOverTime(),
+                saved.getLocation(),
+                saved.getCreatedAt().toLocalDateTime(),
+                saved.getUpdatedAt().toLocalDateTime()
+        );
     }
+
 
     // Calculate overtime
     private String calculateOvertime(LocalDateTime checkIn, LocalDateTime checkOut) {
@@ -151,12 +160,6 @@ public class AttendanceService {
         return "0h 0m";
     }
 
-    // Get employee name
-    private String getEmployeeName(Long employeeId) {
-        return employeeRepository.findById(employeeId)
-                .map(Employee::getName)
-                .orElse("Unknown");
-    }
 
     private Employee getEmployee(Long employeeId) {
         return employeeRepository.findById(employeeId)
