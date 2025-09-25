@@ -1,75 +1,60 @@
 package com.bbu.ai.face_auth.controllers;
 
+import com.bbu.ai.face_auth.dto.EmployeeDTO;
 import com.bbu.ai.face_auth.dto.EmployeeRequest;
+import com.bbu.ai.face_auth.mapper.EmployeeMapper;
 import com.bbu.ai.face_auth.models.Employee;
 import com.bbu.ai.face_auth.services.EmployeeService;
 import jakarta.validation.Valid;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
-
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/admin/employee")
+@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class EmployeeController {
 
-    private final Logger logger = LogManager.getLogger();
     private final EmployeeService employeeService;
 
-    public EmployeeController(EmployeeService employeeService) {
-        this.employeeService = employeeService;
-    }
-
-    @PostMapping()
-    public ResponseEntity<?> create(@Valid @RequestBody EmployeeRequest employeeRequest){
-        Employee employee = employeeService.create(employeeRequest);
-        logger.info("employeeRequest{}", employeeRequest);
-        return ResponseEntity.ok(employee);
+    @PostMapping
+    public ResponseEntity<EmployeeDTO> create(@Valid @RequestBody EmployeeRequest request) {
+        Employee employee = employeeService.create(request);
+        return ResponseEntity.ok(EmployeeMapper.toDTO(employee));
     }
 
     @GetMapping("/all")
-    public ResponseEntity<Page<Employee>> getAll(
+    public ResponseEntity<Page<EmployeeDTO>> getAll(
             @RequestParam(value = "name", defaultValue = "") String name,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size
-            ) {
-
+    ) {
         Pageable pageable = PageRequest.of(page, size);
-
         Page<Employee> employees = employeeService.getAll(name, pageable);
-
-
-        logger.info("employees{}", employees);
-        return ResponseEntity.ok(employees);
+        return ResponseEntity.ok(employees.map(EmployeeMapper::toDTO));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable(value = "id") Long id) {
-        Optional<Employee> student = employeeService.getById(id);
-        return ResponseEntity.ok(student);
+    public ResponseEntity<EmployeeDTO> getById(@PathVariable Long id) {
+        return employeeService.getById(id)
+                .map(EmployeeMapper::toDTO)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateStudent(@PathVariable(value = "id") Long id, @Valid @RequestBody EmployeeRequest employeeRequest){
-        Employee employee = employeeService.update(id, employeeRequest);
-        return ResponseEntity.ok(employee);
+    public ResponseEntity<EmployeeDTO> update(@PathVariable Long id, @Valid @RequestBody EmployeeRequest request) {
+        Employee employee = employeeService.update(id, request);
+        return ResponseEntity.ok(EmployeeMapper.toDTO(employee));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteStudent(@PathVariable(value = "id") Long id){
-        Optional<Employee> student = employeeService.getById(id);
-        if(student.isPresent()){
-            employeeService.delete(id);
-            return ResponseEntity.ok("Student deleted!");
-        }else{
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<String> delete(@PathVariable Long id) {
+        employeeService.delete(id);
+        return ResponseEntity.ok("Employee deleted!");
     }
 }

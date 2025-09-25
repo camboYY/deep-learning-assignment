@@ -9,6 +9,8 @@ import java.time.LocalDate;
 public class EmployeeRequest {
     private String name;
     private LocalDate dob;
-    private Gender gender;
+    private String gender; // "MALE", "FEMALE", "OTHER"
     private String imageUrl;
+    private String department;
+    private Long userId;
 }

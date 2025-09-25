@@ -1,37 +1,62 @@
 "use client";
 
-import { mockAttendance } from "@/data";
-import { useGetAllAttendanceQuery } from "@/store/attendanceApi";
+import {
+  AttendanceResponse,
+  useGetAllAttendanceQuery,
+} from "@/store/attendanceApi";
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 
-export function AttendanceTable() {
-  const { data = mockAttendance, isLoading } = useGetAllAttendanceQuery({
-    page: 0,
-    size: 10,
-  });
+export const AttendanceTable: React.FC = () => {
   const [search, setSearch] = useState("");
   const [filterLocation, setFilterLocation] = useState("All");
+  const [page, setPage] = useState(0);
 
-  if (isLoading) return <p>Loading...</p>;
-
-  // Extract unique locations for filter dropdown
-  const locations = [
-    "All",
-    ...Array.from(new Set(mockAttendance.map((e) => e.location))),
-  ];
-
-  // Filter data based on search and selected location
-  const filteredData = mockAttendance.filter((emp) => {
-    const matchesSearch =
-      emp.name.toLowerCase().includes(search.toLowerCase()) ||
-      emp.note.toLowerCase().includes(search.toLowerCase());
-    const matchesLocation =
-      filterLocation === "All" || emp.location === filterLocation;
-    return matchesSearch && matchesLocation;
+  // hooks must be at top
+  const { data, isLoading, error, refetch } = useGetAllAttendanceQuery({
+    page,
+    size: 10,
   });
 
+  const attendanceData: AttendanceResponse[] = data?.content || [];
+
+  // Extract unique locations for filter dropdown
+  const locations = useMemo(
+    () => [
+      "All",
+      ...Array.from(new Set(attendanceData.map((e) => e.location || ""))),
+    ],
+    [attendanceData]
+  );
+
+  // Filter data based on search and selected location
+  const filteredData = useMemo(
+    () =>
+      attendanceData.filter((emp) => {
+        const matchesSearch =
+          emp.employeeName.toLowerCase().includes(search.toLowerCase()) ||
+          (emp.note?.toLowerCase().includes(search.toLowerCase()) ?? false);
+        const matchesLocation =
+          filterLocation === "All" || emp.location === filterLocation;
+        return matchesSearch && matchesLocation;
+      }),
+    [attendanceData, search, filterLocation]
+  );
+
+  // Handle errors
+  if (error) {
+    toast.error("Failed to load attendance data");
+    console.error(error);
+  }
+
   if (isLoading) return <p>Loading...</p>;
+
+  const converDate = (iso: string) => {
+    const date = new Date(iso);
+    const readable = date.toLocaleString(); // e.g., "9/25/2025, 9:47:44 AM"
+    return readable;
+  };
 
   return (
     <div className="p-4">
@@ -74,29 +99,50 @@ export function AttendanceTable() {
           <tbody>
             {filteredData?.map((emp) => (
               <tr key={emp.id} className="border-b">
-                <td className="px-4 py-2">{emp.name}</td>
+                <td className="px-4 py-2">{emp.employeeName}</td>
                 <td className="px-4 py-2">
-                  {emp.clockIn} → {emp.clockOut}
+                  {converDate(emp.checkIn)} →
+                  {(emp.checkOut && converDate(emp.checkOut)) ?? " -"}
                 </td>
-                <td className="px-4 py-2">{emp.overtime || "-"}</td>
+                <td className="px-4 py-2">{emp.overTime ?? "-"}</td>
                 <td className="px-4 py-2">
-                  <Image
-                    width={50}
-                    height={50}
-                    src={emp.picture}
-                    alt={emp.name}
-                    className="h-8 w-8 rounded-full"
-                  />
+                  {emp.picture && (
+                    <Image
+                      width={50}
+                      height={50}
+                      src={emp.picture}
+                      alt={emp.employeeName}
+                      className="h-8 w-8 rounded-full"
+                    />
+                  )}
                 </td>
                 <td className="px-4 py-2 text-blue-600 underline">
-                  {emp.location}
+                  {emp.location ?? "-"}
                 </td>
-                <td className="px-4 py-2">{emp.note}</td>
+                <td className="px-4 py-2">{emp.note ?? "-"}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      <div className="mt-4 flex gap-2">
+        <button
+          disabled={page === 0}
+          onClick={() => setPage((p) => Math.max(p - 1, 0))}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <button
+          disabled={(data?.content.length ?? 0) < 10}
+          onClick={() => setPage((p) => p + 1)}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
-}
+};

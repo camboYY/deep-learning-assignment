@@ -1,6 +1,8 @@
 import {
   AttendanceDashboard,
   AttendanceTable,
+  CreateEmployeeButton,
+  CreateUserButton,
   LogoutButton,
   PrivateRoute,
   SummaryCards,
@@ -12,7 +14,11 @@ export default function page() {
       <main className="p-6 space-y-6 bg-white-50">
         <div className="flex justify-between">
           <h1 className="text-2xl font-bold">Attendance Dashboard</h1>
-          <LogoutButton />
+          <div>
+            <CreateEmployeeButton />
+            <CreateUserButton />
+            <LogoutButton />
+          </div>
         </div>
         {/* Top Summary Cards */}
 

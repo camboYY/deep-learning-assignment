@@ -32,7 +32,7 @@ export interface UserResponse {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/auth`,
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/auth`,
   }),
   endpoints: (builder) => ({
     login: builder.mutation<JwtResponse, LoginRequest>({

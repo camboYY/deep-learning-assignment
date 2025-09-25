@@ -27,6 +27,9 @@ public class SecurityConfiguration {
             "/api/auth/login",
             "/api/auth/signup",
             "/api/admin/attendance/mark/{employeeId}",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/v3/api-docs.yaml"
     };
 
     public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter,
@@ -43,7 +46,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(AUTH_WHITELIST).permitAll() // Public endpoints
                         .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/auth/user/**").hasRole("USER")
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated() // All other requests require authentication
                 )
                 .sessionManagement(sess -> sess
@@ -58,7 +62,10 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // adjust frontend URL
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "http://localhost"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);

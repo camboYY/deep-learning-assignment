@@ -1,34 +1,46 @@
 package com.bbu.ai.face_auth.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "employees", uniqueConstraints = {
+        @UniqueConstraint(columnNames = "user_id")
+})
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-@Table(name = "employees")
-@Entity
+@Builder
 public class Employee {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private  Long id;
+    private Long id;
+
+    @Column(nullable = false)
     private String name;
+
     private LocalDate dob;
+
     @Enumerated(EnumType.STRING)
     private Gender gender;
+
     private String imageUrl;
+
+    private String department;
 
     @CreationTimestamp
     private Timestamp createdAt;
+
     @UpdateTimestamp
     private Timestamp updatedAt;
 
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
+    private User user;
 }

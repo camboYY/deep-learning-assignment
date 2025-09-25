@@ -1,45 +1,40 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-export interface Attendance {
-  id: number;
-  name: string;
-  employeeId: string;
-  clockIn: string;
-  clockOut: string;
-  overtime?: string;
-  picture: string;
-  location: string;
-  note: string;
-}
-
-export interface AttendanceRequest {
-  employeeId: number;
-  status?: "PRESENT" | "LATE" | "ABSENT" | "OVERTIME";
-}
-
+// Response DTO
 export interface AttendanceResponse {
   id: number;
   employeeId: number;
+  employeeName: string;
+  checkIn: string;
+  checkOut?: string;
   status: string;
+  note?: string;
+  overTime?: string;
+  location?: string;
   createdAt: string;
   updatedAt: string;
-  checkIn: string;
-  checkOut: string;
+}
+
+// Request DTO
+export interface AttendanceRequest {
+  employeeId: number;
+  status?: "PRESENT" | "LATE" | "ABSENT" | "OVERTIME";
+  note?: string;
 }
 
 // Pagination response
 export interface PaginatedAttendance {
-  content: Attendance[];
+  content: AttendanceResponse[];
   totalElements: number;
   totalPages: number;
+  number: number; // current page
   size: number;
-  number: number;
 }
 
 export const attendanceApi = createApi({
   reducerPath: "attendanceApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/admin/attendance`,
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/admin/attendance`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem("authToken");
       if (token) {
@@ -57,18 +52,21 @@ export const attendanceApi = createApi({
       query: ({ page = 0, size = 10 }) => `?page=${page}&size=${size}`,
       providesTags: ["Attendance"],
     }),
-    getAttendanceById: builder.query<Attendance, number>({
+
+    getAttendanceById: builder.query<AttendanceResponse, number>({
       query: (id) => `/${id}`,
       providesTags: ["Attendance"],
     }),
+
     getAttendanceByEmployeeId: builder.query<
       PaginatedAttendance,
       { employeeId: number; page?: number; size?: number }
     >({
       query: ({ employeeId, page = 0, size = 10 }) =>
-        `/getByEmployeeId/${employeeId}?page=${page}&size=${size}`,
+        `/employees/${employeeId}?page=${page}&size=${size}`,
       providesTags: ["Attendance"],
     }),
+
     createAttendance: builder.mutation<AttendanceResponse, AttendanceRequest>({
       query: (data) => ({
         url: "",
@@ -77,6 +75,7 @@ export const attendanceApi = createApi({
       }),
       invalidatesTags: ["Attendance"],
     }),
+
     updateAttendance: builder.mutation<
       AttendanceResponse,
       { id: number; data: AttendanceRequest }
@@ -88,6 +87,7 @@ export const attendanceApi = createApi({
       }),
       invalidatesTags: ["Attendance"],
     }),
+
     deleteAttendance: builder.mutation<{ message: string }, number>({
       query: (id) => ({
         url: `/${id}`,

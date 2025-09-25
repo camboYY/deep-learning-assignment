@@ -14,9 +14,13 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+
     hibernate:
-      show-sql: 'true'
+      show-sql: true
       ddl-auto: update
+
   application:
     name: e-learning
 udemy:
@@ -26,3 +30,13 @@ udemy:
 hibernate:
   temp:
     use_jdbc_metadata_defaults: 'false'
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE

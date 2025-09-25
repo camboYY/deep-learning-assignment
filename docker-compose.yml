@@ -19,8 +19,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: admin123
     depends_on:
       - postgres
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
 
   frontend-dev:
     build:
