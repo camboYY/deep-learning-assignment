@@ -92,6 +92,7 @@ export const EmployeeTable: React.FC = () => {
             <th className="border p-2">Gender</th>
             <th className="border p-2">Department</th>
             <th className="border p-2">User ID</th>
+            <th className="border p-2">Image</th>
             <th className="border p-2">Actions</th>
           </tr>
         </thead>
@@ -104,6 +105,13 @@ export const EmployeeTable: React.FC = () => {
               <td className="border p-2">{emp.gender}</td>
               <td className="border p-2">{emp.department}</td>
               <td className="border p-2">{emp.userId}</td>
+              <td className="border p-2">
+                <img
+                  className="w-20 h-20 rounded-full"
+                  src={emp.imageUrl}
+                  alt="Image"
+                />
+              </td>
               <td className="border p-2 space-x-2">
                 <button
                   className="bg-blue-600 text-white px-2 py-1 rounded"

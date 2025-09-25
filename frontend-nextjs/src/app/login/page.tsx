@@ -28,7 +28,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="max-w-[30%] mx-auto mt-12 justify-center align-middle bg-white bg-opacity-50 rounded text-black">
+    <div className="max-w-[30%] mx-auto mt-12 justify-center align-middle bg-white shadow bg-opacity-50 rounded text-black">
       <form onSubmit={handleSubmit} className="space-y-4  p-8 ">
         <h2 className="text-2xl font-bold mb-4">Login</h2>
         <input
