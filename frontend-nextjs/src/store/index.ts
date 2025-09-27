@@ -1,19 +1,27 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
-import faceReducer from "./faceSlice";
+import { attendanceApi } from "./attendanceApi";
+import { authApi } from "./authApi";
+import { employeeApi } from "./employeeApi";
+import { faceApi } from "./faceApi";
+import { userApi } from "./userApi";
 
-// Configure store
 export const store = configureStore({
   reducer: {
-    face: faceReducer,
+    [attendanceApi.reducerPath]: attendanceApi.reducer,
+    [faceApi.reducerPath]: faceApi.reducer,
+    [authApi.reducerPath]: authApi.reducer,
+    [userApi.reducerPath]: userApi.reducer,
+    [employeeApi.reducerPath]: employeeApi.reducer,
   },
-  devTools: process.env.NODE_ENV !== "production",
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat([
+      attendanceApi.middleware,
+      faceApi.middleware,
+      authApi.middleware,
+      userApi.middleware,
+      employeeApi.middleware,
+    ]),
 });
 
-// Infer types for RootState and AppDispatch
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
-
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;

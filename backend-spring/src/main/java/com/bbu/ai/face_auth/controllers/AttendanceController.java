@@ -1,8 +1,10 @@
 package com.bbu.ai.face_auth.controllers;
 
 import com.bbu.ai.face_auth.dto.AttendanceRequest;
+import com.bbu.ai.face_auth.mapper.AttendanceResponse;
 import com.bbu.ai.face_auth.models.Attendance;
 import com.bbu.ai.face_auth.services.AttendanceService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +26,16 @@ public class AttendanceController {
         this.attendanceService = attendanceService;
     }
 
+    // Mark attendance via webcam (face recognition gives employeeId)
+    @PostMapping("/mark/{employeeId}")
+    public ResponseEntity<AttendanceResponse> markAttendance(@PathVariable Long employeeId, @RequestParam(required = false) String note,
+                                                     HttpServletRequest request) {
+        String location = getClientLocation(request);
+        AttendanceResponse response = attendanceService.markAttendance(employeeId, note, location);
+
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping()
     public ResponseEntity<?> create(@Valid @RequestBody AttendanceRequest attendanceRequest){
         Attendance attendance = attendanceService.create(attendanceRequest);
@@ -31,21 +43,21 @@ public class AttendanceController {
     }
 
     @GetMapping()
-    public ResponseEntity<?> getAll(
+    public ResponseEntity<Page<AttendanceResponse>> getAll(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Attendance> attendances = attendanceService.getAll(pageable);
+        Page<AttendanceResponse> attendances = attendanceService.getAll(pageable);
         return ResponseEntity.ok(attendances);
     }
 
-    @GetMapping("/getByEmployeeId/{id}")
-    public ResponseEntity<?> getByEmployeeId(
-            @PathVariable(value = "id") Long id,
+    @GetMapping("/employees/{id}")
+    public ResponseEntity<Page<AttendanceResponse>> getByEmployeeId(
+            @PathVariable(value = "id") Long employeeId,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Attendance> attendances = attendanceService.getByEmployeeId(id, pageable);
+        Page<AttendanceResponse> attendances = attendanceService.getByEmployeeId(employeeId, pageable);
         return ResponseEntity.ok(attendances);
     }
 
@@ -71,11 +83,17 @@ public class AttendanceController {
         if(attendance.isPresent()){
             attendanceService.delete(id);
             return ResponseEntity.ok("Attendance deleted!");
-        }else{
-            return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.notFound().build();
 
     }
 
+    public String getClientLocation(HttpServletRequest request) {
+        String clientIp = request.getRemoteAddr();
+        // You can integrate with a GeoIP service (e.g., MaxMind DB, or ip-api.com)
+        // Example pseudo:
+        return "Phnom Penh, Cambodia (IP: " + clientIp + ")";
+    }
 
 }

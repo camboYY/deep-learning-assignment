@@ -1,18 +1,26 @@
 spring:
+  security:
+    user:
+      name: admin
+      password: admin123
   datasource:
 #    username: avnadmin
 #    url: jdbc:postgresql://pg-2dae27d8-pilsam123-f9b7.l.aivencloud.com:28805/defaultdb
 #    password: AVNS_z8NksMRJXlGwZqTSZ99
-    username: postgres
-    url: jdbc:postgresql://localhost:5432/postgres
-    password: postgres
+    username: myuser
+    url: jdbc:postgresql://localhost:5432/mydb
+    password: mypassword
   jpa:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+
     hibernate:
-      show-sql: 'true'
+      show-sql: true
       ddl-auto: update
+
   application:
     name: e-learning
 udemy:
@@ -22,3 +30,13 @@ udemy:
 hibernate:
   temp:
     use_jdbc_metadata_defaults: 'false'
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE

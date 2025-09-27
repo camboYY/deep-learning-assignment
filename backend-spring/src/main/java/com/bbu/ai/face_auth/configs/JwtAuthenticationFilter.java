@@ -1,6 +1,6 @@
 package com.bbu.ai.face_auth.configs;
 
-import com.bbu.ai.face_auth.services.JwtService;
+import com.bbu.ai.face_auth.services.JwtCustomService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,11 +22,11 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final HandlerExceptionResolver handlerExceptionResolver;
 
-    private final JwtService jwtService;
+    private final JwtCustomService jwtService;
     private final UserDetailsService userDetailsService;
 
     public JwtAuthenticationFilter(
-            JwtService jwtService,
+            JwtCustomService jwtService,
             UserDetailsService userDetailsService,
             HandlerExceptionResolver handlerExceptionResolver
     ) {

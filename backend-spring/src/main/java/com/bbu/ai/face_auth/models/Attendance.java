@@ -19,15 +19,25 @@ public class Attendance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long employeeId;
     private LocalDateTime checkIn;
     @Column(nullable = true)
     private LocalDateTime checkOut;
-    private EAttendeneStatus status;
+    private EnumAttendanceStatus status;
+    @Column(columnDefinition = "TEXT",nullable = true)
+    private String note;
+    @Column(nullable = true)
+    private String overTime;
+    @Column(nullable = true)
+    private String location;
 
     @CreationTimestamp
     private Timestamp createdAt;
     @UpdateTimestamp
     private Timestamp updatedAt;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", nullable = false)
+    private Employee employee;
 
 }

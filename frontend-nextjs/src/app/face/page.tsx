@@ -1,147 +1,114 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/store";
-import { enrollFace, resetResult, verifyFace } from "@/store/faceSlice";
-import * as faceapi from "face-api.js";
+import { useCreateAttendanceMutation } from "@/store/attendanceApi";
+import { useVerifyFaceMutation } from "@/store/faceApi";
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function VerifyPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const dispatch = useAppDispatch();
-  const { status, result, error } = useAppSelector((s) => s.face);
   const [streaming, setStreaming] = useState(false);
-  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [verifyFace, { isLoading, error, reset, data, isSuccess, isError }] =
+    useVerifyFaceMutation();
+  const [
+    createAttendance,
+    {
+      isLoading: isLoadingCreate,
+      error: errorCreate,
+      reset: resetCreate,
+      data: dataCreate,
+      isSuccess: isSuccessCreate,
+      isError: isErrorCreate,
+    },
+  ] = useCreateAttendanceMutation();
 
-  // Load face-api.js models
-  useEffect(() => {
-    async function loadModels() {
-      await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
-      setModelsLoaded(true);
-    }
-    loadModels();
-  }, []);
-
-  // Start webcam
-  useEffect(() => {
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: 640, height: 480 },
-          audio: false,
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          setStreaming(true);
-        }
-      } catch (err) {
-        console.error("Webcam error:", err);
+  // Function to start camera
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
+        audio: false,
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setStreaming(true);
       }
+    } catch (err) {
+      console.error("Webcam error:", err);
+      toast.error("Failed to access webcam");
     }
+  };
 
+  // Function to stop camera
+  const stopCamera = () => {
+    const tracks =
+      (videoRef.current?.srcObject as MediaStream)?.getTracks?.() || [];
+    tracks.forEach((t) => t.stop());
+    setStreaming(false);
+  };
+
+  const handleReset = async () => {
+    reset(); // clear mutation state
+    await stopCamera(); // stop current stream
+    await startCamera(); // start camera again
+  };
+
+  // Start camera on mount
+  useEffect(() => {
     startCamera();
-
-    return () => {
-      const tracks =
-        (videoRef.current?.srcObject as MediaStream)?.getTracks?.() || [];
-      tracks.forEach((t) => t.stop());
-    };
+    return () => stopCamera();
   }, []);
 
-  // Live detection loop (bounding boxes on top of video)
-  useEffect(() => {
-    if (!streaming || !modelsLoaded) return;
-    const canvas = canvasRef.current;
+  // Capture frame from video
+  const captureImage = (): string | undefined => {
+    if (!videoRef.current || !canvasRef.current) return;
+
     const video = videoRef.current;
-    if (!canvas || !video) return;
+    const canvas = canvasRef.current;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const resizeCanvas = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-    };
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.9);
+  };
 
-    const detect = async () => {
-      resizeCanvas();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Submit image to FastAPI
+  const handleVerify = async () => {
+    const imageBase64 = captureImage();
+    if (!imageBase64) return;
+    try {
+      const res = await verifyFace({ imageBase64 }).unwrap();
+      const success = res.score >= 0.7;
+      if (success) {
+        // Option 3: Slice last characters (if format is fixed)
+        const match = res?.employee_id?.match(/\d+/);
+        const employeeNumber = match ? parseInt(match[0], 10) : null;
 
-      const detections = await faceapi.detectAllFaces(
-        video,
-        new faceapi.TinyFaceDetectorOptions()
-      );
-
-      // Draw bounding boxes
-      detections.forEach((det) => {
-        const { x, y, width, height } = det.box;
-        ctx.strokeStyle = "lime";
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, width, height);
-      });
-
-      requestAnimationFrame(detect);
-    };
-
-    detect();
-    window.addEventListener("resize", resizeCanvas);
-    return () => window.removeEventListener("resize", resizeCanvas);
-  }, [streaming, modelsLoaded]);
-
-  // Auto verify every 5s
-  useEffect(() => {
-    if (!streaming || !modelsLoaded) return;
-    const interval = setInterval(async () => {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas) return;
-
-      const detections = await faceapi.detectAllFaces(
-        video,
-        new faceapi.TinyFaceDetectorOptions()
-      );
-      console.log(detections);
-      if (detections.length === 1) {
-        // capture current frame for verification
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(video, 0, 0);
-        const imageBase64 = canvas.toDataURL("image/jpeg", 0.9);
-        dispatch(verifyFace({ imageBase64 }));
+        await createAttendance({
+          employeeId: Number(employeeNumber),
+          status: success ? "PRESENT" : "ABSENT",
+        }).unwrap();
       }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [streaming, modelsLoaded, dispatch]);
-
-  // Manual enrollment
-  async function handleEnroll() {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-
-    const detections = await faceapi.detectAllFaces(
-      video,
-      new faceapi.TinyFaceDetectorOptions()
-    );
-    if (detections.length !== 1) {
-      alert("Please make sure exactly one face is visible for enrollment.");
-      return;
+      toast.success(
+        res.score >= 0.7
+          ? `✅ Verified! Score: ${res.score.toFixed(2)}`
+          : "❌ No match found"
+      );
+    } catch (err) {
+      console.error("Verification failed:", err);
+      toast.error("Face verification failed");
     }
-
-    const ctx = canvas.getContext("2d");
-    ctx?.drawImage(video, 0, 0);
-    const imageBase64 = canvas.toDataURL("image/jpeg", 0.9);
-
-    const name = prompt("Enter employee ID or name for enrollment");
-    if (!name) return;
-    dispatch(enrollFace({ imageBase64, id: name }));
-  }
+  };
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">
-        Employee Face Verification (Live Overlay)
-      </h1>
+      <h1 className="text-2xl font-bold mb-4">Employee Face Verification</h1>
 
       <div className="relative w-[640px] h-[480px] mx-auto">
         <video
@@ -161,20 +128,21 @@ export default function VerifyPage() {
             position: "absolute",
             top: 0,
             left: 0,
-            pointerEvents: "none", // allows clicks to pass through
+            pointerEvents: "none",
           }}
         />
       </div>
 
       <div className="mt-4 flex gap-3 justify-center">
         <button
-          onClick={handleEnroll}
+          onClick={handleVerify}
           className="px-4 py-2 rounded bg-blue-600 text-white"
+          disabled={!streaming || isLoading}
         >
-          Enroll Manually
+          {isLoading ? "Verifying..." : "Verify Face"}
         </button>
         <button
-          onClick={() => dispatch(resetResult())}
+          onClick={handleReset}
           className="px-4 py-2 rounded bg-gray-600 text-white"
         >
           Reset
@@ -182,9 +150,14 @@ export default function VerifyPage() {
       </div>
 
       <div className="mt-4 text-center">
-        <strong>Status:</strong> {status} <br />
-        {result && <div className="mt-2">Result: {JSON.stringify(result)}</div>}
-        {error && <div className="text-red-600 mt-2">Error: {error}</div>}
+        <strong>Status:</strong>{" "}
+        {isLoading
+          ? "Verifying..."
+          : isSuccess
+          ? "Success ✅"
+          : isError
+          ? "Failed ❌"
+          : "Idle"}
       </div>
     </div>
   );

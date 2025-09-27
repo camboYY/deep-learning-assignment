@@ -20,19 +20,6 @@ services:
 
       
 
-  redis:
-    image: redis:7.2-alpine
-    container_name: attendance_redis
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   springboot:
     build: ./backend-spring
     container_name: attendance_springboot
@@ -42,49 +29,9 @@ services:
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: admin123
     depends_on:
-      postgres:
-        condition: service_healthy
-    expose:
-      - "8080"
-    # (Optional) add a healthcheck if your image has curl or wget installed
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 10
-
-  # fastapi:
-  #   build: ./ml-fastapi
-  #   container_name: attendance_fastapi
-  #   restart: unless-stopped
-  #   environment:
-  #     REDIS_URL: redis://attendance_redis:6379/0
-  #   depends_on:
-  #     redis:
-  #       condition: service_healthy
-  #   expose:
-  #     - "8000"
-    # Optional healthcheck (ensure your image has curl/wget, or add a /health route)
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 10
-
-  frontend:
-    build:
-      context: ./frontend-nextjs
-      dockerfile: Dockerfile
-    container_name: attendance_frontend
-    restart: unless-stopped
-    environment:
-      NEXT_PUBLIC_API_URL: /api
-      NEXT_PUBLIC_ML_API_URL: /ml
-    depends_on:
-      - springboot
-      # - fastapi
-    expose:
-      - "3000"
+      - postgres
+    ports:
+      - "8080:8080"
 
   # Dev-only Next.js (hot reload). Use with: docker compose --profile dev up -d
   frontend-dev:
@@ -112,10 +59,12 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - frontend
+      - frontend-dev
       - springboot
       # - fastapi
 

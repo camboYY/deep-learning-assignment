@@ -1,14 +1,16 @@
 package com.bbu.ai.face_auth.dto;
 
+import com.bbu.ai.face_auth.models.Gender;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 public class EmployeeRequest {
     private String name;
-    private LocalDateTime dob;
-    private String gender;
+    private LocalDate dob;
+    private String gender; // "MALE", "FEMALE", "OTHER"
     private String imageUrl;
-
+    private String department;
+    private Long userId;
 }

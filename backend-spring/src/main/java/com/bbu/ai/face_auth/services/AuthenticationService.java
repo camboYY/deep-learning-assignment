@@ -1,10 +1,11 @@
 package com.bbu.ai.face_auth.services;
 
 
-import com.bbu.ai.face_auth.dto.LoginRequest;
-import com.bbu.ai.face_auth.dto.SignupRequest;
-import com.bbu.ai.face_auth.models.ERole;
-import com.bbu.ai.face_auth.models.Role;
+import com.bbu.ai.face_auth.dto.UserLoginRequest;
+import com.bbu.ai.face_auth.dto.UserSignupRequest;
+
+import com.bbu.ai.face_auth.models.EnumRole;
+import com.bbu.ai.face_auth.models.UserRole;
 import com.bbu.ai.face_auth.models.User;
 import com.bbu.ai.face_auth.repository.RoleRepository;
 import com.bbu.ai.face_auth.repository.UserRepository;
@@ -43,7 +44,7 @@ public class AuthenticationService {
         this.roleRepository = roleRepository;
     }
 
-    public User signup(SignupRequest signUpRequest) throws BadRequestException {
+    public User signup(UserSignupRequest signUpRequest) throws BadRequestException {
         logger.info("signUpRequest{}", signUpRequest);
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
             throw new BadRequestException("Error: Username is already taken!");
@@ -58,45 +59,45 @@ public class AuthenticationService {
                 signUpRequest.getPhoneNumber());
 
         Set<String> strRoles = signUpRequest.getRole();
-        Set<Role> roles = new HashSet<>();
+        Set<UserRole> roles = new HashSet<>();
         logger.info("roles{}", roles);
 
         if (strRoles == null) {
 
-            Role defaultRole = new Role();
-            defaultRole.setName(ERole.ROLE_USER);
+            UserRole defaultRole = new UserRole();
+            defaultRole.setName(EnumRole.ROLE_USER);
 
             roles.add(defaultRole);
         } else {
             strRoles.forEach(role -> {
                 switch (role) {
                     case "admin":
-                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        UserRole adminRole = roleRepository.findByName(EnumRole.ROLE_ADMIN)
+                                .orElseThrow(() -> new RuntimeException("Error: UserRole is not found."));
                         roles.add(adminRole);
 
                         break;
                     case "mod":
-                        Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        UserRole modRole = roleRepository.findByName(EnumRole.ROLE_MODERATOR)
+                                .orElseThrow(() -> new RuntimeException("Error: UserRole is not found."));
                         roles.add(modRole);
 
                         break;
                     case "student":
-                        Role studentRole = roleRepository.findByName(ERole.ROLE_STUDENT)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        UserRole studentRole = roleRepository.findByName(EnumRole.ROLE_STUDENT)
+                                .orElseThrow(() -> new RuntimeException("Error: UserRole is not found."));
                         roles.add(studentRole);
 
                         break;
                     case "teacher":
-                        Role teacherRole = roleRepository.findByName(ERole.ROLE_TEACHER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        UserRole teacherRole = roleRepository.findByName(EnumRole.ROLE_TEACHER)
+                                .orElseThrow(() -> new RuntimeException("Error: UserRole is not found."));
                         roles.add(teacherRole);
 
                         break;
                     default:
-                        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        UserRole userRole = roleRepository.findByName(EnumRole.ROLE_USER)
+                                .orElseThrow(() -> new RuntimeException("Error: UserRole is not found."));
                         roles.add(userRole);
                 }
             });
@@ -108,7 +109,7 @@ public class AuthenticationService {
         return userRepository.save(user);
     }
 
-    public User authenticate(LoginRequest input) {
+    public User authenticate(UserLoginRequest input) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         input.getUsername(),

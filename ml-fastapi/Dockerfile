@@ -1,11 +1,10 @@
-FROM python:3.11-bullseye
+# ---------- Stage 1: Builder ----------
+FROM python:3.11-slim AS builder
 
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies (needed for numpy, opencv, insightface, onnxruntime)
+# Install system dependencies for building wheels
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    python3-dev \
     cmake \
     git \
     wget \
@@ -16,20 +15,45 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
     libxext6 \
     ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+    patchelf \
+ && rm -rf /var/lib/apt/lists/*
 
-# Copy only requirements first (so Docker can cache deps)
+# Copy requirements
 COPY requirements.txt .
 
-# Install dependencies
-RUN pip install --upgrade pip setuptools wheel \
- && pip install --no-cache-dir -r requirements.txt
+# Upgrade pip and install Python packages
+RUN pip install --upgrade pip \
+ && pip install --no-cache-dir --prefer-binary -r requirements.txt
 
-# Copy the rest of your code
-COPY . .
+# Patch ONNX Runtime .so (fix execstack issue)
+RUN patchelf --clear-execstack /usr/local/lib/python3.11/site-packages/onnxruntime/capi/onnxruntime_pybind11_state*.so || true
 
-# Expose FastAPI port
+# Pre-download buffalo_l model to avoid first-run download
+RUN python -c "from insightface.app import FaceAnalysis; app = FaceAnalysis(name='buffalo_l'); app.prepare(ctx_id=0)"
+
+# ---------- Stage 2: Runtime ----------
+FROM python:3.11-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext6 \
+    ffmpeg \
+    patchelf \
+ && rm -rf /var/lib/apt/lists/*
+
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+
+# Patch ONNX Runtime in runtime image
+RUN patchelf --clear-execstack /usr/local/lib/python3.11/site-packages/onnxruntime/capi/onnxruntime_pybind11_state*.so || true
+
+# Copy application code
+WORKDIR /app
+COPY . /app
+
+# Expose port and run FastAPI
 EXPOSE 8000
-
-# Start FastAPI app
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
