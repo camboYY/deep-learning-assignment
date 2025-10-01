@@ -88,47 +88,61 @@ def _closest_match(emb: np.ndarray) -> tuple[str | None, float]:
 @app.post("/enroll")
 async def enroll(
     background_tasks: BackgroundTasks,             # required
-    emp_id: str = Form(...),
-    files: List[UploadFile] = File(...),
+    id: str = Form(...),
+    imageBase64: List[UploadFile] = File(...),
     deny_if_exists: bool = Form(True),             # block if employee ID already has an embedding
     prevent_duplicate_face: bool = Form(True),     # block if this face matches someone else
-    threshold: float = Form(0.7)
+    threshold: float = Form(0.7),                  # gallery duplicate threshold (stricter than verify)
+    enforce_same_person: bool = Form(True),        # NEW: ensure all photos are the same person
+    intra_threshold: float = Form(0.55),           # NEW: min cosine to centroid within the set
 ):
-    # Read all bytes now
+    # 1) Read all bytes now
     items: List[Tuple[str, bytes]] = []
-    for f in files:
+    for f in imageBase64:
         data = await f.read()
         if data:
             items.append((f.filename, data))
     if not items:
         raise HTTPException(400, "No valid image bytes received")
 
-    # Block if this employee ID already has an embedding (unless caller allows updates)
-    key = f"employee:{emp_id}"
+    # 2) Block if this employee ID already exists (unless allowed)
+    key = f"employee:{id}"
     if deny_if_exists and r.exists(key):
-        raise HTTPException(status_code=409, detail=f"Employee {emp_id} already enrolled")
+        raise HTTPException(status_code=409, detail=f"Employee {id} already enrolled")
 
-    # prevent registering the same person under a different ID
+    # 3) Build embeddings for all images we can detect a face from
+    name_embs = _embeddings_from_items(items)
+    if not name_embs:
+        raise HTTPException(400, "No face detected in any uploaded image")
+
+    # 4) Intra-set consistency: all photos should be the same person
+    if enforce_same_person:
+        ok, info = _consistency_check(name_embs, intra_threshold=float(intra_threshold))
+        if not ok:
+            return {
+                "status": "inconsistent_set",
+                "message": "Uploaded images do not appear to be the same person.",
+                **info
+            }
+
+    # 5) Duplicate check against existing gallery (use centroid of this set)
     if prevent_duplicate_face:
-        probe = _first_embedding_from_items(items)
-        if probe is None:
-            raise HTTPException(400, "No face detected in any uploaded image")
-        best_key, best_score = _closest_match(probe)
-        # If there is a strong match AND it's not this emp_id, block
-        if best_key is not None and best_key != key and best_score >= threshold:
-            # Strip "employee:" prefix for clarity
+        centroid = _l2n(np.mean(np.stack([e for _, e in name_embs], axis=0), axis=0))
+        best_key, best_score = _closest_match(centroid)
+        if best_key is not None and best_key != key and best_score >= float(threshold):
             existing_emp = best_key.split("employee:", 1)[-1]
             return {
                 "status": "duplicate",
                 "message": "A very similar face is already enrolled.",
                 "existing_employee_id": existing_emp,
                 "score": round(best_score, 4),
-                "duplicate_threshold": threshold,
+                "duplicate_threshold": float(threshold),
             }
 
-    # background
-    background_tasks.add_task(enroll_new_faces_from_upload, emp_id, items)
-    return {"status": "scheduled", "message": f"Enrollment started for {emp_id}", "count": len(items)}
+    # 6) Background enroll (your existing function)
+    background_tasks.add_task(enroll_new_faces_from_upload, id, items)
+    return {"status": "scheduled", "message": f"Enrollment started for {id}", "count": len(items)}
+
 
 
 @app.post("/verify")
@@ -166,3 +180,44 @@ async def verify(file: UploadFile = File(...), threshold: float = 0.7):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+# helper
+def _embeddings_from_items(items: list[tuple[str, bytes]]):
+    """Return list of (filename, embedding) for images that contain a face."""
+    out: list[tuple[str, np.ndarray]] = []
+    for fname, data in items:
+        bgr = _decode_bgr(data)
+        if bgr is None:
+            continue
+        h, w = bgr.shape[:2]
+        if max(h, w) > 3000:
+            s = 3000.0 / max(h, w)
+            bgr = cv.resize(bgr, (int(w*s), int(h*s)), interpolation=cv.INTER_AREA)
+        faces = app_model.get(bgr)
+        if not faces:
+            continue
+        faces.sort(key=lambda f: float((f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))*float(getattr(f, "det_score", 1.0)), reverse=True)
+        out.append((fname, _l2n(faces[0].embedding)))
+    return out
+
+def _consistency_check(name_embs: list[tuple[str, np.ndarray]], intra_threshold: float):
+    """
+    Returns (ok: bool, details: dict). ok is True if every image embedding
+    is close to the centroid by >= intra_threshold.
+    """
+    if len(name_embs) <= 1:
+        return True, {"used": len(name_embs), "min_score": 1.0}
+    embs = np.stack([e for _, e in name_embs], axis=0).astype(np.float32)
+    centroid = _l2n(embs.mean(axis=0))
+    scores = (embs @ centroid).astype(float)  # cosine to centroid
+    min_score = float(scores.min())
+    # collect the worst offenders
+    worst_idx = int(scores.argmin())
+    worst_file = name_embs[worst_idx][0]
+    return (min_score >= intra_threshold,
+            {"used": len(name_embs),
+             "min_score": round(min_score, 4),
+             "threshold": intra_threshold,
+             "worst_file": worst_file})
