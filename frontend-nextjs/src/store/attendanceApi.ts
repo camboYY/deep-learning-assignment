@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export interface AttendanceResponse {
   id: number;
   employeeId: number;
-  employeeName: string;
+  employeeName?: string;
   checkIn: string;
   checkOut?: string;
   status: string;
@@ -13,6 +13,7 @@ export interface AttendanceResponse {
   location?: string;
   createdAt: string;
   updatedAt: string;
+  picture?: string;
 }
 
 // Request DTO

@@ -94,7 +94,7 @@ async def enroll(
     prevent_duplicate_face: bool = Form(True),     # block if this face matches someone else
     threshold: float = Form(0.7),                  # gallery duplicate threshold (stricter than verify)
     enforce_same_person: bool = Form(True),        # NEW: ensure all photos are the same person
-    intra_threshold: float = Form(0.55),           # NEW: min cosine to centroid within the set
+    intra_threshold: float = Form(0.75),           # NEW: min cosine to centroid within the set
 ):
     # 1) Read all bytes now
     items: List[Tuple[str, bytes]] = []
@@ -114,6 +114,7 @@ async def enroll(
     name_embs = _embeddings_from_items(items)
     if not name_embs:
         raise HTTPException(400, "No face detected in any uploaded image")
+    
 
     # 4) Intra-set consistency: all photos should be the same person
     if enforce_same_person:
@@ -213,6 +214,8 @@ def _consistency_check(name_embs: list[tuple[str, np.ndarray]], intra_threshold:
     centroid = _l2n(embs.mean(axis=0))
     scores = (embs @ centroid).astype(float)  # cosine to centroid
     min_score = float(scores.min())
+
+    print(f"sore compare: {scores}")
     # collect the worst offenders
     worst_idx = int(scores.argmin())
     worst_file = name_embs[worst_idx][0]

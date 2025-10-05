@@ -1,3 +1,4 @@
+// store/employeeApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface EmployeeDTO {
@@ -23,7 +24,7 @@ export interface PagedResponse<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
-  number: number; // current page
+  number: number;
   size: number;
 }
 
@@ -32,10 +33,9 @@ export const employeeApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_URL,
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("authToken");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+      // IMPORTANT: don't set Content-Type here; let FormData set its own boundary.
+      const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+      if (token) headers.set("Authorization", `Bearer ${token}`);
       return headers;
     },
   }),
@@ -46,18 +46,38 @@ export const employeeApi = createApi({
       { page: number; size: number; name?: string }
     >({
       query: ({ page, size, name = "" }) =>
-        `/admin/employee/all?page=${page}&size=${size}&name=${name}`,
+        `/admin/employee/all?page=${page}&size=${size}&name=${encodeURIComponent(name)}`,
       providesTags: ["Employee"],
     }),
 
-    createEmployee: builder.mutation<EmployeeDTO, EmployeeRequest>({
-      query: (body) => ({ url: `/admin/employee`, method: "POST", body }),
+    // 👇 Accept JSON (EmployeeRequest) OR multipart (FormData)
+    createEmployee: builder.mutation<EmployeeDTO, EmployeeRequest | FormData>({
+      query: (data) => {
+        let body: BodyInit;
+        let headers: Record<string, string> = {};    
+        if (data instanceof FormData) {
+          // FormData (e.g., file uploads)
+          body = data;
+          // Don't set Content-Type, let the browser handle it for multipart
+        } else {
+          // Plain JSON
+          body = JSON.stringify(data);
+          headers["Content-Type"] = "application/json";
+        }
+    
+        return {
+          url: `/admin/employee`,
+          method: "POST",
+          body,
+          headers,
+        };
+      },
       invalidatesTags: ["Employee"],
     }),
 
     updateEmployee: builder.mutation<
       EmployeeDTO,
-      { id: number; data: EmployeeRequest }
+      { id: number; data: EmployeeRequest | FormData }
     >({
       query: ({ id, data }) => ({
         url: `/admin/employee/${id}`,

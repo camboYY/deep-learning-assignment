@@ -11,7 +11,12 @@ export interface FaceVerifyPayload {
 
 export interface FaceEnrollPayload {
   id: string;
-  imageBase64: string;
+  imageBase64: Array<String>;
+  deny_if_exists: boolean;
+  prevent_duplicate_face: boolean;
+  threshold: number;
+  enforce_same_person: boolean;
+  intra_threshold: number;
 }
 
 export interface FaceVerifyResponse {
@@ -23,6 +28,8 @@ export interface FaceVerifyResponse {
 
 export interface FaceEnrollResponse {
   success: boolean;
+  message: String;
+  status: String;
   employee_id: string;
 }
 
@@ -31,7 +38,7 @@ export interface FaceEnrollResponse {
 export const faceApi = createApi({
   reducerPath: "faceApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
+    baseUrl: 'http://localhost/ml',// process.env.NEXT_PUBLIC_API_URL,
   }),
   /**
    * @typedef {Object} FaceVerifyPayload
@@ -102,13 +109,15 @@ export const faceApi = createApi({
       },
     }),
 
-    enrollFace: builder.mutation<FaceEnrollResponse, FaceEnrollPayload>({
-      query: (payload) => ({
-        url: "/ml/enroll",
+    enrollFace: builder.mutation<FaceEnrollResponse, FormData>({
+      query: (formData) => ({
+        url: "/enroll",
         method: "POST",
-        body: payload,
+        body: formData,
+        // Let the browser set the Content-Type (multipart/form-data)
       }),
     }),
+
   }),
 });
 
