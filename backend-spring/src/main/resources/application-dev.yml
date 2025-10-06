@@ -7,9 +7,9 @@ spring:
 #    username: avnadmin
 #    url: jdbc:postgresql://pg-2dae27d8-pilsam123-f9b7.l.aivencloud.com:28805/defaultdb
 #    password: AVNS_z8NksMRJXlGwZqTSZ99
-    username: myuser
-    url: jdbc:postgresql://localhost:5432/mydb
-    password: mypassword
+    username: admin
+    url: jdbc:postgresql://localhost:5432/attendance_db
+    password: admin123
   jpa:
     properties:
       hibernate:

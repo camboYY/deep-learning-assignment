@@ -38,6 +38,7 @@ appendonly.aof
 *.seed
 *.pid.lock
 docker-compose.override.yml
+docker-compose.yml
 
 # IDE / Editor
 .vscode/

@@ -30,7 +30,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost/api
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
       NEXT_PUBLIC_ML_API_URL: http://localhost/ml
     volumes:
       - ./frontend-nextjs:/app
@@ -42,7 +42,7 @@ services:
     image: nginx:1.27
     container_name: attendance_nginx
     ports:
-      - "80:80"
+      - "8081:80"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
