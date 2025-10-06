@@ -50,6 +50,7 @@ services:
     depends_on:
       - frontend-dev
       - springboot
+      
 
 volumes:
   postgres_data:

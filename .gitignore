@@ -38,7 +38,6 @@ appendonly.aof
 *.seed
 *.pid.lock
 docker-compose.override.yml
-docker-compose.yml
 
 # IDE / Editor
 .vscode/
@@ -54,3 +53,4 @@ htmlcov/
 # FastAPI static
 staticfiles/
 /ml-fastapi/data/train/*
+docker-compose.yml
