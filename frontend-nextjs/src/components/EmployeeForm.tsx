@@ -77,7 +77,7 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
   
     const base: EmployeeRequest = {
       name: form.name,
-      dob: form.dob,
+      dob: `${form.dob}T00:00:00`,
       gender: form.gender,
       department: form.department || undefined,
       imageUrl: "",
