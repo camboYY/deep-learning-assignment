@@ -5,6 +5,7 @@ import {
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
 } from "@/store/employeeApi";
+import { useEnrollFaceMutation } from "@/store/faceApi"; // ✅ Import the correct hook
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -13,43 +14,113 @@ interface Props {
   onSuccess?: () => void;
 }
 
+type FormState = {
+  name: string;
+  dob: string; // yyyy-mm-dd
+  gender: "MALE" | "FEMALE";
+  department: string;
+  userIdStr: string;
+  files: File[];
+};
+
 export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
-  const [form, setForm] = useState<EmployeeRequest>({
-    name: employee?.name || "",
-    dob: employee?.dob || "",
-    gender: employee?.gender || "MALE",
-    imageUrl: employee?.imageUrl || "",
-    department: employee?.department || "",
-    userId: employee?.userId || 0,
+  const [form, setForm] = useState<FormState>({
+    name: employee?.name ?? "",
+    dob: employee?.dob ?? "",
+    gender: (employee?.gender as "MALE" | "FEMALE") ?? "MALE",
+    department: employee?.department ?? "",
+    userIdStr: employee?.userId != null ? String(employee.userId) : "",
+    files: [],
   });
 
   const [createEmployee, { isLoading: creating }] = useCreateEmployeeMutation();
   const [updateEmployee, { isLoading: updating }] = useUpdateEmployeeMutation();
+  const [enrollFace] = useEnrollFaceMutation(); // ✅ The real mutation function
 
   useEffect(() => {
-    if (employee) setForm({ ...form, ...employee });
+    if (!employee) return;
+    setForm({
+      name: employee.name ?? "",
+      dob: employee.dob ?? "",
+      gender: (employee.gender as "MALE" | "FEMALE") ?? "MALE",
+      department: employee.department ?? "",
+      userIdStr: employee.userId != null ? String(employee.userId) : "",
+      files: [],
+    });
   }, [employee]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "userId") {
+      setForm((p) => ({ ...p, userIdStr: value }));
+    } else {
+      setForm((p) => ({ ...p, [name]: value }));
+    }
+  };
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    setForm((p) => ({ ...p, files }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const userId =
+      form.userIdStr.trim() === "" ? undefined : Number(form.userIdStr);
+
+    if (userId != null && Number.isNaN(userId)) {
+      toast.error("User ID must be a number");
+      return;
+    }
+
+    const base: EmployeeRequest = {
+      name: form.name,
+      dob: `${form.dob}T00:00:00`,
+      gender: form.gender,
+      department: form.department || undefined,
+      imageUrl: "",
+      userId: userId ?? 0,
+    };
+
     try {
+      // Send FormData with real files
+
       if (employee?.id) {
-        await updateEmployee({ id: employee.id, data: form }).unwrap();
+        await updateEmployee({ id: employee.id, data: base }).unwrap();
         toast.success("Employee updated!");
       } else {
-        await createEmployee(form).unwrap();
-        toast.success("Employee created!");
+        if (form.files.length > 0) {
+          const r = await enrollFace({
+            files: form.files,
+            id: String(userId ?? 0),
+          }).unwrap();
+          if (r.status == "scheduled") {
+            await createEmployee(base).unwrap();
+            toast.success("Employee created!");
+          } else {
+            toast.error(`${r.message}`);
+            throw new Error(`${r.message}`);
+          }
+        }
       }
+
       onSuccess?.();
     } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to save employee");
+      // even if we get an error stated that the employee already exists, we still want to create the employee
+      if (err?.status === 400 || err?.status === 409) {
+        await createEmployee(base).unwrap();
+        toast.success("Employee created!");
+        onSuccess?.();
+        toast.success(err?.data?.detail || err?.data?.message);
+        return;
+      }
+      console.error("Submit error:", err);
+      toast.error(
+        err?.data?.detail || err?.data?.message || "Failed to save employee"
+      );
     }
   };
 
@@ -60,6 +131,7 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
       onSubmit={handleSubmit}
       className="p-4 bg-gray-100 text-black rounded shadow space-y-3"
     >
+      <label className="block text-sm font-medium">Name</label>
       <input
         name="name"
         value={form.name}
@@ -67,6 +139,8 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
         placeholder="Name"
         className="border p-2 w-full"
       />
+
+      <label className="block text-sm font-medium">Date of Birth</label>
       <input
         name="dob"
         type="date"
@@ -74,6 +148,8 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
         onChange={handleChange}
         className="border p-2 w-full"
       />
+
+      <label className="block text-sm font-medium">Gender</label>
       <select
         name="gender"
         value={form.gender}
@@ -83,13 +159,23 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
         <option value="MALE">MALE</option>
         <option value="FEMALE">FEMALE</option>
       </select>
+
+      <label className="block text-sm font-medium">Photos (multiple)</label>
       <input
-        name="imageUrl"
-        value={form.imageUrl}
-        onChange={handleChange}
-        placeholder="Image URL"
+        name="images"
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFiles}
         className="border p-2 w-full"
       />
+      {form.files.length > 0 && (
+        <p className="text-xs text-gray-600">
+          Selected {form.files.length} file(s)
+        </p>
+      )}
+
+      <label className="block text-sm font-medium">Department</label>
       <input
         name="department"
         value={form.department}
@@ -97,17 +183,21 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
         placeholder="Department"
         className="border p-2 w-full"
       />
+
+      <label className="block text-sm font-medium">User ID</label>
       <input
         name="userId"
         type="number"
-        value={form.userId}
+        value={form.userIdStr}
         onChange={handleChange}
         placeholder="User ID"
         className="border p-2 w-full"
+        inputMode="numeric"
       />
+
       <button
         disabled={loading}
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-60"
       >
         {loading ? "Saving..." : employee ? "Update" : "Create"}
       </button>

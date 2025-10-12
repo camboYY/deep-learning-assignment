@@ -35,8 +35,8 @@ export const AttendanceTable: React.FC = () => {
     () =>
       attendanceData.filter((emp) => {
         const matchesSearch =
-          emp.employeeName.toLowerCase().includes(search.toLowerCase()) ||
-          (emp.note?.toLowerCase().includes(search.toLowerCase()) ?? false);
+          emp.employeeName?.includes(search) ||
+          (emp.note?.includes(search) ?? false);
         const matchesLocation =
           filterLocation === "All" || emp.location === filterLocation;
         return matchesSearch && matchesLocation;
@@ -111,7 +111,7 @@ export const AttendanceTable: React.FC = () => {
                       width={50}
                       height={50}
                       src={emp.picture}
-                      alt={emp.employeeName}
+                      alt={emp?.employeeName ??''}
                       className="h-8 w-8 rounded-full"
                     />
                   )}

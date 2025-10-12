@@ -140,7 +140,7 @@ export const EmployeeTable: React.FC = () => {
           Previous
         </button>
         <button
-          disabled={data?.content.length < 5}
+          disabled={(data?.content.length ?? 0) < 5}
           onClick={() => setPage(page + 1)}
           className="px-3 py-1 border rounded"
         >

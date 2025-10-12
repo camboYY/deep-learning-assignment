@@ -1,18 +1,27 @@
-version: "3.9"
 services:
   postgres:
     image: postgres:15
     container_name: attendance_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
       POSTGRES_DB: attendance_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Uncomment if you need to connect from your laptop (psql/GUI):
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d attendance_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   springboot:
     build: ./backend-spring
     container_name: attendance_springboot
+    restart: unless-stopped
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/attendance_db
       SPRING_DATASOURCE_USERNAME: admin
@@ -22,11 +31,13 @@ services:
     ports:
       - "8080:8080"
 
+  # Dev-only Next.js (hot reload). Use with: docker compose --profile dev up -d
   frontend-dev:
     build:
       context: ./frontend-nextjs
       dockerfile: Dockerfile.dev
     container_name: attendance_frontend_dev
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -37,10 +48,12 @@ services:
       - /app/node_modules
     depends_on:
       - springboot
+      # - fastapi
 
   nginx:
     image: nginx:1.27
     container_name: attendance_nginx
+    restart: unless-stopped
     ports:
       - "80:80"
     extra_hosts:
@@ -50,6 +63,8 @@ services:
     depends_on:
       - frontend-dev
       - springboot
+      # - fastapi
 
 volumes:
   postgres_data:
+  redis_data:
