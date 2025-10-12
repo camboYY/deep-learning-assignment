@@ -22,6 +22,7 @@ public class Attendance {
     private LocalDateTime checkIn;
     @Column(nullable = true)
     private LocalDateTime checkOut;
+    @Enumerated(EnumType.STRING)
     private EnumAttendanceStatus status;
     @Column(columnDefinition = "TEXT",nullable = true)
     private String note;
@@ -35,9 +36,7 @@ public class Attendance {
     @UpdateTimestamp
     private Timestamp updatedAt;
 
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", nullable = false)
-    private Employee employee;
+    @Column(nullable = false)
+    private Long employeeId;
 
 }

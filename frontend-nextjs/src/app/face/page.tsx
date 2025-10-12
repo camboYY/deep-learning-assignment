@@ -1,6 +1,6 @@
 "use client";
 
-import { useCreateAttendanceMutation } from "@/store/attendanceApi";
+import { useMarkAttendanceMutation } from "@/store/attendanceApi";
 import { useVerifyFaceMutation } from "@/store/faceApi";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -21,7 +21,7 @@ export default function VerifyPage() {
       isSuccess: isSuccessCreate,
       isError: isErrorCreate,
     },
-  ] = useCreateAttendanceMutation();
+  ] = useMarkAttendanceMutation();
 
   // Function to start camera
   const startCamera = async () => {
@@ -82,21 +82,29 @@ export default function VerifyPage() {
   const handleVerify = async () => {
     const imageBase64 = captureImage();
     if (!imageBase64) return;
+
+    // ✅ Convert base64 → File
+    const file = await fetch(imageBase64)
+      .then((res) => res.blob())
+      .then((blob) => new File([blob], "face.jpg", { type: "image/jpeg" }));
+
     try {
-      const res = await verifyFace({ imageBase64 }).unwrap();
-      const success = res.score >= 0.7;
+      const res = await verifyFace(file).unwrap();
+      const status = res.status;
+      const success = res.score >= 0.7 && status === "success";
+
       if (success) {
-        // Option 3: Slice last characters (if format is fixed)
         const match = res?.employee_id?.match(/\d+/);
         const employeeNumber = match ? parseInt(match[0], 10) : null;
 
         await createAttendance({
           employeeId: Number(employeeNumber),
-          status: success ? "PRESENT" : "ABSENT",
+          note: success ? "PRESENT" : "ABSENT",
         }).unwrap();
       }
+
       toast.success(
-        res.score >= 0.7
+        success
           ? `✅ Verified! Score: ${res.score.toFixed(2)}`
           : "❌ No match found"
       );

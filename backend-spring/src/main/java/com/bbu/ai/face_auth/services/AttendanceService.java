@@ -39,7 +39,7 @@ public class AttendanceService {
 
         // Create new student's account
         Attendance attendance = new Attendance();
-        attendance.setEmployee(getEmployee(attendanceRequest.getEmployeeId()));
+        attendance.setEmployeeId(getEmployee(attendanceRequest.getEmployeeId()).getId());
         attendance.setCheckIn(LocalDateTime.now());
         attendance.setStatus(attendanceRequest.getStatus());
         return attendanceRepository.save(attendance);
@@ -50,8 +50,8 @@ public class AttendanceService {
         Page<Attendance> attendances = attendanceRepository.findAll(pageable);
         return attendances.map(a -> new AttendanceResponse(
                 a.getId(),
-                a.getEmployee().getId(),
-                a.getEmployee().getName(), // fetch from Employee repo
+                getEmployee(a.getEmployeeId()).getId(),
+                getEmployee(a.getEmployeeId()).getName(), // fetch from Employee repo
                 a.getCheckIn(),
                 a.getCheckOut(),
                 a.getStatus().name(),
@@ -68,8 +68,8 @@ public class AttendanceService {
 
         return attendances.map(a -> new AttendanceResponse(
                 a.getId(),
-                a.getEmployee().getId(),
-                a.getEmployee().getName(), // fetch from Employee repo
+                employeeId,
+                getEmployee(employeeId).getName(), // fetch from Employee repo
                 a.getCheckIn(),
                 a.getCheckOut(),
                 a.getStatus().name(),
@@ -90,7 +90,7 @@ public class AttendanceService {
         Optional<Attendance> attendanceData = getById(id);
         if(attendanceData.isPresent()){
             Attendance attendance = attendanceData.get();
-            attendance.setEmployee(getEmployee(attendanceRequest.getEmployeeId()));
+            attendance.setEmployeeId(getEmployee(attendanceRequest.getEmployeeId()).getId());
             attendance.setStatus(attendanceRequest.getStatus());
             attendance.setCheckOut(LocalDateTime.now());
             return attendanceRepository.save(attendance);
@@ -108,9 +108,12 @@ public class AttendanceService {
         Attendance attendance;
 
         Optional<Attendance> existingAttendance =
-                attendanceRepository.findTopByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(employeeId);
+                attendanceRepository.findByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(employeeId);
+        logger.info("existingAttendance  {} and employeeId {} ", existingAttendance, employeeId);
 
         if (existingAttendance.isPresent()) {
+            logger.info("Checkout flow  "+ existingAttendance);
+
             // Checkout flow
             attendance = existingAttendance.get();
             attendance.setCheckOut(LocalDateTime.now());
@@ -123,16 +126,17 @@ public class AttendanceService {
             attendance.setStatus(EnumAttendanceStatus.PRESENT);
         }
 
-        attendance.setEmployee(getEmployee(employeeId));
+        attendance.setEmployeeId(employeeId);
         if (note != null) attendance.setNote(note);
         if (location != null) attendance.setLocation(location);
 
         Attendance saved = attendanceRepository.save(attendance);
+        Employee employee = getEmployee(employeeId);
 
         return new AttendanceResponse(
                 saved.getId(),
-                saved.getEmployee().getId(),
-                saved.getEmployee().getName(),
+                employeeId,
+                employee.getName(),
                 saved.getCheckIn(),
                 saved.getCheckOut(),
                 saved.getStatus().name(),
@@ -162,7 +166,7 @@ public class AttendanceService {
 
 
     private Employee getEmployee(Long employeeId) {
-        return employeeRepository.findById(employeeId)
+        return employeeRepository.findByUserId(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found with id: " + employeeId));
     }
 }

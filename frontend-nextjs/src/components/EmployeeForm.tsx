@@ -1,6 +1,4 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
 import {
   EmployeeDTO,
   EmployeeRequest,
@@ -8,6 +6,8 @@ import {
   useUpdateEmployeeMutation,
 } from "@/store/employeeApi";
 import { useEnrollFaceMutation } from "@/store/faceApi"; // ✅ Import the correct hook
+import React, { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 interface Props {
   employee?: EmployeeDTO;
@@ -67,14 +67,15 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    const userId = form.userIdStr.trim() === "" ? undefined : Number(form.userIdStr);
-  
+
+    const userId =
+      form.userIdStr.trim() === "" ? undefined : Number(form.userIdStr);
+
     if (userId != null && Number.isNaN(userId)) {
       toast.error("User ID must be a number");
       return;
     }
-  
+
     const base: EmployeeRequest = {
       name: form.name,
       dob: `${form.dob}T00:00:00`,
@@ -83,52 +84,45 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
       imageUrl: "",
       userId: userId ?? 0,
     };
-  
+
     try {
       // Send FormData with real files
-  
+
       if (employee?.id) {
         await updateEmployee({ id: employee.id, data: base }).unwrap();
         toast.success("Employee updated!");
       } else {
-
         if (form.files.length > 0) {
-          const enrollForm = new FormData();
-          enrollForm.append("id", String(userId ?? 0));
-          enrollForm.append("deny_if_exists", "true");
-          enrollForm.append("prevent_duplicate_face", "true");
-          enrollForm.append("threshold", "0.7");
-          enrollForm.append("enforce_same_person", "true");
-          enrollForm.append("intra_threshold", "0.55");
-    
-          form.files.forEach((file) => {
-            enrollForm.append("imageBase64", file); // Field must match backend
-          });
-    
-          const r = await enrollFace(enrollForm).unwrap();
-
-          if(r.status == "scheduled") {
+          const r = await enrollFace({
+            files: form.files,
+            id: String(userId ?? 0),
+          }).unwrap();
+          if (r.status == "scheduled") {
             await createEmployee(base).unwrap();
             toast.success("Employee created!");
-          }else {
+          } else {
             toast.error(`${r.message}`);
             throw new Error(`${r.message}`);
-
           }
-          
         }
-
-        
       }
-  
+
       onSuccess?.();
     } catch (err: any) {
-
+      // even if we get an error stated that the employee already exists, we still want to create the employee
+      if (err?.status === 400 || err?.status === 409) {
+        await createEmployee(base).unwrap();
+        toast.success("Employee created!");
+        onSuccess?.();
+        toast.success(err?.data?.detail || err?.data?.message);
+        return;
+      }
       console.error("Submit error:", err);
-      toast.error(err?.data?.detail || err?.data?.message || "Failed to save employee");
+      toast.error(
+        err?.data?.detail || err?.data?.message || "Failed to save employee"
+      );
     }
   };
-  
 
   const loading = creating || updating;
 
