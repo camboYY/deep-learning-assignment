@@ -29,7 +29,8 @@ public class SecurityConfiguration {
             "/api/admin/attendance/mark/{employeeId}",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/v3/api-docs.yaml"
+            "/v3/api-docs.yaml",
+            "/api/admin/dashboard/**"
     };
 
     public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter,
