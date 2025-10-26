@@ -5,6 +5,7 @@ import {
   useDeleteEmployeeMutation,
   useGetEmployeesQuery,
 } from "@/store/employeeApi";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -106,10 +107,14 @@ export const EmployeeTable: React.FC = () => {
               <td className="border p-2">{emp.department}</td>
               <td className="border p-2">{emp.userId}</td>
               <td className="border p-2">
-                <img
+                <Image
                   className="w-20 h-20 rounded-full"
-                  src={emp.imageUrl}
+                  src={
+                    "https://64.media.tumblr.com/eb9198d0964f22c050097e32b9155732/3c2a84734d55fd33-db/s1280x1920/7368de1ba606627f0a17477b98cd4f1f271118fe.png"
+                  }
                   alt="Image"
+                  width={50}
+                  height={50}
                 />
               </td>
               <td className="border p-2 space-x-2">

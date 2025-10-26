@@ -6,6 +6,7 @@ import {
   useUpdateEmployeeMutation,
 } from "@/store/employeeApi";
 import { useEnrollFaceMutation } from "@/store/faceApi"; // ✅ Import the correct hook
+import { useGetUsersQuery } from "@/store/userApi"; // ✅ Import user API hook
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -36,6 +37,7 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
   const [createEmployee, { isLoading: creating }] = useCreateEmployeeMutation();
   const [updateEmployee, { isLoading: updating }] = useUpdateEmployeeMutation();
   const [enrollFace] = useEnrollFaceMutation(); // ✅ The real mutation function
+  const { data: users = [], isLoading: loadingUsers } = useGetUsersQuery();
 
   useEffect(() => {
     if (!employee) return;
@@ -108,6 +110,7 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
       }
 
       onSuccess?.();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       // even if we get an error stated that the employee already exists, we still want to create the employee
       if (err?.status === 400 || err?.status === 409) {
@@ -184,16 +187,22 @@ export const EmployeeForm: React.FC<Props> = ({ employee, onSuccess }) => {
         className="border p-2 w-full"
       />
 
-      <label className="block text-sm font-medium">User ID</label>
-      <input
+      {/* ✅ User ID Dropdown */}
+      <label className="block text-sm font-medium">User</label>
+      <select
         name="userId"
-        type="number"
         value={form.userIdStr}
         onChange={handleChange}
-        placeholder="User ID"
         className="border p-2 w-full"
-        inputMode="numeric"
-      />
+        disabled={loadingUsers}
+      >
+        <option value="">Select a user</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {user.name} ({user.username})
+          </option>
+        ))}
+      </select>
 
       <button
         disabled={loading}

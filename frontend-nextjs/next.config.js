@@ -5,6 +5,7 @@ const nextConfig = {
     domains: [
       "i.pravatar.cc", // sample avatars
       "i0.wp.com", // your example image
+      "64.media.tumblr.com",
       // add other domains as needed
     ],
   },
