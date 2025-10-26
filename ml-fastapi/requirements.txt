@@ -17,9 +17,10 @@ onnxruntime==1.22.1
 insightface==0.7.3
 
 # === PyTorch (Mac M-series: MPS acceleration) ===
-torch==2.4.1
-torchvision==0.19.1
-torchaudio==2.4.1
+torch==2.2.1
+torchvision==0.17.1
+torchaudio==2.2.1
+
 # facenet-pytorch==2.6.0             #not required for ArcFace
 
 # === Extras ===

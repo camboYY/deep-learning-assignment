@@ -10,15 +10,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     # Uncomment if you need to connect from your laptop (psql/GUI):
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d attendance_db"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-      
 
   springboot:
     build: ./backend-spring
@@ -35,7 +33,6 @@ services:
 
   # Dev-only Next.js (hot reload). Use with: docker compose --profile dev up -d
   frontend-dev:
-    profiles: ["dev"]
     build:
       context: ./frontend-nextjs
       dockerfile: Dockerfile.dev

@@ -14,7 +14,7 @@ import java.util.Optional;
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Page<Attendance> findByEmployeeId(long employeeId, Pageable pageable);
-    Optional<Attendance> findTopByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(Long employeeId);
+    Optional<Attendance> findByEmployeeIdAndCheckOutIsNullOrderByCheckInDesc(Long employeeId);
 
     @Query(value = "SELECT * FROM attendances a WHERE DATE(a.check_in) = CURRENT_DATE", nativeQuery = true)
     List<Attendance> findTodayAttendances();
